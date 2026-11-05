@@ -82,6 +82,9 @@ All screenshots use made-up data from `npm run db:seed:local`.
 
 Guests can't see or reply to anything until you finish the setup wizard.
 
+**Recommended next:** [lock down preview URLs with Cloudflare Access](#lock-down-preview-urls-with-cloudflare-access-recommended)
+(one toggle, about a minute).
+
 **Using your own domain:** in the Cloudflare dashboard, open your Worker →
 Settings → Domains & Routes → Add → Custom domain (e.g. `rsvp.example.com`).
 
@@ -142,6 +145,29 @@ household are grouped into one invite. See [`examples/guests.csv`](examples/gues
 
 You get a preview first. If any row has a problem, nothing is imported until
 it's fixed.
+
+## Lock down preview URLs with Cloudflare Access (recommended)
+
+Every time your site is deployed, Cloudflare also publishes **preview URLs**: extra,
+public addresses running the same site. They're easy to forget about, so lock them to
+you with one toggle:
+
+1. In the Cloudflare dashboard, open your Worker → **Settings** and find **Protect with
+   Cloudflare Access**.
+2. Turn it on and choose the scope **Previews only**.
+3. Leave the policy as **Cloudflare account: Allow** (only people on your Cloudflare
+   account can open previews).
+
+![The "Protect with Cloudflare Access" setting, with the scope options "Previews only" and "All traffic"](docs/screenshots/cloudflare-access-toggle.png)
+
+> [!WARNING]
+> **Don't choose "All traffic" if guests use your `workers.dev` address.** That puts a
+> Cloudflare sign-in in front of the whole site, so guests couldn't open their
+> invitation. Only use it if guests reach the site on a custom domain instead.
+
+This is separate from your admin password: the admin still asks for it. To protect the
+admin itself with Cloudflare Access (adding email codes or passkeys), see
+[Admin sign-in with Cloudflare Access](#admin-sign-in-with-cloudflare-access-optional).
 
 ## Bot protection (Cloudflare Turnstile)
 
@@ -267,6 +293,10 @@ these sites**, then embed your RSVPer address in an `<iframe>`.
 **Does it send emails?**
 No. Share each household's link however you like; **Export links** gives you a
 CSV for mail merge.
+
+**Guests are being asked to sign in to Cloudflare.**
+"Protect with Cloudflare Access" is set to **All traffic** on your Worker. Change the
+scope to **Previews only** (Worker → Settings → Protect with Cloudflare Access).
 
 **Do I need a paid Cloudflare plan?**
 No. Everything runs on the free plan.
