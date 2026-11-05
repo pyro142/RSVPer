@@ -45,7 +45,9 @@ export async function createSession(
   const csrf = randomToken(32);
   const now = Math.floor(Date.now() / 1000);
   await db.batch([
-    db.prepare('DELETE FROM admin_sessions WHERE expires_at < ?').bind(now),
+    db
+      .prepare('DELETE FROM admin_sessions WHERE wedding_id = ? AND expires_at < ?')
+      .bind(weddingId, now),
     db
       .prepare(
         `INSERT INTO admin_sessions (id, wedding_id, csrf_token, created_at, expires_at, ip_hash)
