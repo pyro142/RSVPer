@@ -1,0 +1,837 @@
+/* ==========================================================================
+   RSVPer — guest invite card
+
+   The card is single-screen on most phones, but it grows to its content
+   rather than clipping: a household with four named guests, plus-one rows
+   and a Turnstile widget would not fit a fixed-height pane, so the page
+   scrolls in that case.
+
+   Everything the guest touches is sized in px with a 44px minimum target.
+   Only the masthead type scales with viewport height, which is what gives
+   the card its family resemblance to the printed invite.
+
+   Every colour comes from tokens.css, which the page links first. The evening
+   palette for reception-only households lives there too, under
+   data-theme="evening" — rsvp.js sets that attribute once the lookup resolves,
+   or when a full-day household chooses the evening.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* The card is cream; matching the page stops a white flash past the
+     scroll boundary on iOS rubber-banding. */
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--rose);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Page and card
+   -------------------------------------------------------------------------- */
+
+.page {
+  display: flex;
+  min-height: 100dvh;
+  width: 100%;
+  padding: clamp(14px, 2.5dvh, 28px) clamp(10px, 3vw, 24px);
+}
+
+.card {
+  /* margin:auto rather than align-items:center — when the card outgrows the
+     viewport this still centres it without clipping the top edge, which is
+     the classic flexbox overflow trap. */
+  margin: auto;
+  position: relative;
+  width: min(94vw, 430px);
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeUp 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-inner {
+  flex: 1;
+  padding: clamp(22px, 3.2dvh, 30px) clamp(20px, 7vw, 32px) 0;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Masthead
+   -------------------------------------------------------------------------- */
+
+.names {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.22em;
+  font-family: var(--font-serif);
+}
+
+.names .name {
+  font-size: clamp(26px, 7.4dvh, 42px);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.names .amp {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--gold);
+  font-size: clamp(15px, 4dvh, 22px);
+  transform: translateY(-2px);
+}
+
+.eyebrow {
+  font-size: clamp(9px, 1.4dvh, 11px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.details {
+  margin-top: 10px;
+}
+
+.details .line {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(13px, 2.3dvh, 17px);
+  line-height: 1.45;
+}
+
+.details .line .dim {
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.78em;
+}
+
+/* Carried over from the invite. The fixed aspect ratio reserves the space
+   before the image decodes, so the form below doesn't jump down the page as
+   it loads — which on a slow phone connection is the difference between
+   tapping "Joyfully accepts" and tapping whatever slid into its place. */
+.venue-photo {
+  margin-top: clamp(10px, 1.4dvh, 16px);
+  width: 100%;
+  aspect-ratio: 800 / 220;
+  max-height: clamp(60px, 11dvh, 108px);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--photo-shadow);
+}
+
+.venue-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  display: block;
+}
+
+.rule {
+  width: 40px;
+  height: 1px;
+  background: var(--line);
+  margin: clamp(12px, 1.6dvh, 18px) auto;
+}
+
+/* --------------------------------------------------------------------------
+   States
+   -------------------------------------------------------------------------- */
+
+.state[hidden] {
+  display: none;
+}
+
+.state-heading {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(17px, 2.9dvh, 22px);
+  line-height: 1.3;
+  color: var(--rose);
+  margin: 0 0 5px;
+}
+
+.state-sub {
+  font-size: clamp(12px, 1.85dvh, 13.5px);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0 auto clamp(14px, 2dvh, 20px);
+  max-width: 30ch;
+}
+
+@keyframes stateIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stateOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.state.entering {
+  animation: stateIn 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.state.leaving {
+  animation: stateOut 0.24s ease both;
+}
+
+/* --------------------------------------------------------------------------
+   Fields
+   -------------------------------------------------------------------------- */
+
+.field {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.field label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  font-family: var(--font-sans);
+  font-size: 16px; /* iOS zooms the page on focus for anything under 16px */
+  color: var(--ink);
+  outline: none;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.4;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--rose);
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* The code itself: monospaced and spaced out so characters are easy to
+   check against the printed card. */
+.code-input {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em; /* offsets the trailing letter-space so it looks centred */
+  text-align: center;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.code-input::placeholder {
+  color: var(--line);
+  letter-spacing: 0.34em;
+}
+
+/* --------------------------------------------------------------------------
+   Segmented toggle
+
+   Real radio inputs, visually hidden but focusable, with the labels doing the
+   drawing. Keyboard and screen reader behaviour comes for free.
+   -------------------------------------------------------------------------- */
+
+.toggle {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+
+.toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-btn {
+  flex: 1;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border: 1.5px solid var(--rose);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--rose);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(12px, 1.9dvh, 14px);
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.toggle-input:checked + .toggle-btn {
+  background: var(--rose);
+  color: var(--submit-ink);
+}
+
+.toggle-input:focus-visible + .toggle-btn {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.toggle.invalid .toggle-btn {
+  border-color: var(--rose-deep);
+}
+
+/* --------------------------------------------------------------------------
+   Guest list
+   -------------------------------------------------------------------------- */
+
+.branch {
+  animation: stateIn 0.3s ease both;
+}
+
+/* Whole day vs evening only. Sits above the guest list because it changes what
+   the rest of the card means — and, when it flips to evening, how it looks. */
+.scope-choice {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+}
+
+.scope-choice[hidden] {
+  display: none;
+}
+
+.scope-choice legend {
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 7px;
+}
+
+/* Slightly quieter than the accept/decline pair above it — a secondary choice,
+   not a competing one. */
+.scope-toggle {
+  margin-bottom: 0;
+}
+
+.scope-toggle .toggle-btn {
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 13px;
+  min-height: 40px;
+  border-width: 1px;
+}
+
+.scope-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 9px 0 0;
+  text-align: center;
+}
+
+.scope-note[hidden] {
+  display: none;
+}
+
+.guest-list {
+  border: 0;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.guest-list legend {
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 7px;
+}
+
+.guest-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--row-bg);
+}
+
+/* A warm tint, not a highlight. The tick already says "selected" — this just
+   stops a chosen row looking identical to an unchosen one. */
+.guest-row:has(.guest-check:checked) {
+  border-color: var(--row-checked-line);
+}
+
+.guest-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  min-height: var(--tap);
+  cursor: pointer;
+  text-align: left;
+}
+
+.guest-check {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid var(--rose);
+  border-radius: 6px;
+  background: var(--input-bg);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+}
+
+.guest-check::before {
+  content: '';
+  width: 11px;
+  height: 11px;
+  transform: scale(0);
+  transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  /* Sits on the rose fill, so it tracks the same ink as the buttons —
+     a white tick on the lighter evening rose would barely read. */
+  background: var(--submit-ink);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+.guest-check:checked {
+  background: var(--rose);
+}
+.guest-check:checked::before {
+  transform: scale(1);
+}
+
+.guest-check:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Takes the slack in the row so the +1 badge is pushed to the right edge. */
+.guest-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.guest-name {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+/* Marks a guest who may bring someone. Visible whether or not they're ticked,
+   so the permission reads as a property of the person rather than of the
+   current selection.
+
+   align-self: stretch makes it match the row's height — .guest-main carries no
+   vertical padding, so the badge fills it edge to edge. The 7px radius is the
+   same as .mini-toggle-btn, which keeps it in the same family as the Yes/No
+   buttons that appear directly beneath it. */
+.plus-one-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  flex-shrink: 0;
+  min-width: 42px;
+  padding: 0 12px;
+  background: var(--rose);
+  color: var(--submit-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  border-radius: 7px;
+}
+
+/* Plus-one sub-row, revealed only when its guest is coming */
+.plus-one {
+  border-top: 1px dashed var(--line);
+  padding: 10px 12px 11px;
+  background: var(--sub-row-bg);
+  text-align: left;
+}
+
+.plus-one[hidden] {
+  display: none;
+}
+
+.plus-one-ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plus-one-ask .ask-label {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.mini-toggle {
+  display: flex;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.mini-toggle-btn {
+  min-width: 46px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border: 1px solid var(--rose);
+  border-radius: 7px;
+  color: var(--rose);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.toggle-input:checked + .mini-toggle-btn {
+  background: var(--rose);
+  color: var(--submit-ink);
+}
+
+.toggle-input:focus-visible + .mini-toggle-btn {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.plus-one-name {
+  margin: 9px 0 0;
+}
+.plus-one-name[hidden] {
+  display: none;
+}
+
+.plus-one-name input {
+  min-height: 40px;
+  font-size: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Counts and errors
+   -------------------------------------------------------------------------- */
+
+.party-count {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.party-count.over {
+  color: var(--error-ink);
+  font-weight: 600;
+}
+
+.form-error {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--error-ink);
+  background: var(--error-bg);
+  border: 1px solid var(--error-line);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  margin: 0 0 12px;
+  text-align: left;
+}
+
+.form-error[hidden] {
+  display: none;
+}
+
+.decline-note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 14px;
+}
+
+.decline-note p {
+  margin: 0;
+}
+
+.turnstile-holder:not(:empty) {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Submit
+   -------------------------------------------------------------------------- */
+
+.submit-btn {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--rose);
+  color: var(--submit-ink);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.08s ease,
+    opacity 0.18s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--rose-deep);
+}
+.submit-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submit-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.submit-btn.is-busy {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+/* --------------------------------------------------------------------------
+   Confirmation
+   -------------------------------------------------------------------------- */
+
+.confirmation {
+  padding: clamp(6px, 1.5dvh, 14px) 0 0;
+}
+
+.confirm-display {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(19px, 3.4dvh, 25px);
+  color: var(--rose);
+  margin: 0 0 8px;
+  line-height: 1.25;
+}
+
+.confirm-body {
+  font-size: clamp(12.5px, 1.9dvh, 14px);
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 auto 16px;
+  max-width: 30ch;
+}
+
+.confirm-foot {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Flowers
+   -------------------------------------------------------------------------- */
+
+.flowers {
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: clamp(14px, 2dvh, 22px);
+  line-height: 0;
+}
+
+.flowers img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Confetti
+   -------------------------------------------------------------------------- */
+
+/* The celebration draws to a canvas the page owns rather than the one
+   canvas-confetti creates for itself — see confettiCannon() in rsvp.js for
+   why. Stacking and sizing therefore live here instead of in a zIndex option. */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* prefers-reduced-motion is handled once, in tokens.css. */
+
+/* --------------------------------------------------------------------------
+   Additions for RSVPer: map link, optional extras, dietary notes
+   -------------------------------------------------------------------------- */
+
+.venue-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.venue-link[href] {
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.venue-link[href]:hover {
+  text-decoration-color: var(--rose);
+}
+
+.venue-link[href]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.extras {
+  margin: 4px 0 12px;
+}
+.extras[hidden],
+.extras .field[hidden],
+.dietary[hidden] {
+  display: none;
+}
+
+.optional {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.guest-row > .dietary {
+  margin: 0;
+  padding: 0 12px 12px;
+}
+.plus-one-name .dietary {
+  margin: 8px 0 0;
+}
+
+.guest-row .dietary input {
+  min-height: 40px;
+  font-size: 16px;
+}
+
+.state[hidden] {
+  display: none;
+}

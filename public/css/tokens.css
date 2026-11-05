@@ -1,0 +1,197 @@
+/* ==========================================================================
+   Design tokens — shared by the guest card and the admin panel
+   ==========================================================================
+
+   Both pages link this file first, then their own layout stylesheet. The
+   layouts stay separate on purpose: the guest page is one fixed-width card
+   with display type and dvh sizing, the admin is a dense table with dialogs.
+   They have almost no rules in common, so merging them would mean every guest
+   downloading the admin table CSS to render an invitation. What they DO share
+   is every colour, and that all lives here.
+
+   ---------------------------------------------------------------------------
+   THE DARK PALETTE HAS TWO JOBS
+   ---------------------------------------------------------------------------
+   data-theme="evening"  guest card, reception-only households. Content, not
+                         preference — it means "you're invited to the
+                         evening reception", so it is never set from the OS setting.
+                         A day guest on a dark-mode phone still gets the cream
+                         card, because that's the stationery.
+
+   data-theme="dark"     admin panel, the operator's own choice. Defaults to
+                         the OS setting, overridden by the toggle, remembered
+                         in localStorage.
+
+   Same values, different reasons. Both select the block below.
+   ========================================================================== */
+
+:root {
+  /* --- type -------------------------------------------------------------
+     Self-hosted (see css/fonts.css); no requests to third-party font CDNs. */
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* --- brand ------------------------------------------------------------ */
+  --rose: #e66c78;
+  --rose-deep: #c6505f;
+  --gold: #d9a441;
+  --sage: #7e9668;
+  --sage-soft: #eef2e8;
+
+  /* --- surfaces --------------------------------------------------------- */
+  --bg: #fff8ef; /* the page behind everything */
+  --card-bg: #fffdf9; /* the card / panels */
+  --surface-2: #fffcf6; /* subtly inset: table headers, hint boxes */
+  --input-bg: #ffffff;
+  --row-bg: #ffffff;
+  --sub-row-bg: #fffcf6;
+  --code-bg: #f6eee1; /* inline <code> */
+
+  /* --- text ------------------------------------------------------------- */
+  --ink: #4a4038;
+  --ink-soft: #8a7e71;
+  --submit-ink: #ffffff; /* text sitting on a rose fill */
+
+  /* --- lines ------------------------------------------------------------ */
+  --line: #efe1cc;
+  --row-checked-line: #e8d5bc;
+
+  /* --- feedback --------------------------------------------------------- */
+  --rose-tint: #fdf0f1; /* ghost-button hover */
+  --rose-tint-2: #fbe6e8; /* the same, one step stronger */
+  --error-bg: #fdf0f1;
+  --error-line: #f5d9dc;
+  --error-ink: #c6505f;
+  --danger: #c6505f;
+  --danger-hover: #a63f4c;
+
+  /* --- status pills ----------------------------------------------------- */
+  --pill-ok-bg: #eef2e8;
+  --pill-ok-ink: #7e9668;
+  --pill-no-bg: #fdf0f1;
+  --pill-no-ink: #c6505f;
+  --pill-wait-bg: #fbf1dc;
+  --pill-wait-ink: #9a7220;
+  --pill-eve-bg: #efe6f4;
+  --pill-eve-ink: #6b4c7a;
+  --pill-choice-bg: #e4edf4;
+  --pill-choice-ink: #3f6280;
+
+  /* --- chrome ----------------------------------------------------------- */
+  --toast-bg: #4a4038;
+  --toast-ink: #ffffff;
+  --backdrop: rgba(74, 56, 48, 0.42);
+
+  --card-shadow: 0 30px 70px -30px rgba(74, 56, 48, 0.28), 0 2px 10px rgba(74, 56, 48, 0.06);
+  --dialog-shadow: 0 30px 70px -25px rgba(74, 56, 48, 0.4);
+  --photo-shadow: 0 8px 20px -10px rgba(74, 56, 48, 0.35);
+  --toast-shadow: 0 12px 30px -10px rgba(74, 56, 48, 0.5);
+
+  /* --- geometry --------------------------------------------------------- */
+  --radius: 9px;
+  --radius-card: 26px;
+  --tap: 44px;
+}
+
+/* ==========================================================================
+   Dark
+   ========================================================================== */
+
+:root[data-theme='evening'],
+:root[data-theme='dark'] {
+  /* Rose and gold both lift, or they disappear into the plum. */
+  --rose: #f0808c;
+  --rose-deep: #d9636f;
+  --gold: #e5b65c;
+  --sage: #a8c08f;
+  --sage-soft: #2a3327;
+
+  --bg: #201a24;
+  --card-bg: #2c2430;
+  --surface-2: #322a36;
+  --input-bg: #241e28;
+  --row-bg: #322a36;
+  --sub-row-bg: #292231;
+  --code-bg: #352c3a;
+
+  --ink: #efe6dc;
+  --ink-soft: #aca0a9;
+  /* Dark ink on the lighter rose. White on it is about 3:1, under the 4.5:1
+     that 14px bold needs; this clears it comfortably. */
+  --submit-ink: #241e28;
+
+  --line: #453a48;
+  --row-checked-line: #5b4a54;
+
+  --rose-tint: #3a252c;
+  --rose-tint-2: #462c34;
+  --error-bg: #3a252c;
+  --error-line: #5e3742;
+  /* Lighter than --rose-deep: that lands near 3:1 on the error background. */
+  --error-ink: #f2a2ac;
+  --danger: #e0707e;
+  --danger-hover: #ec8894;
+
+  --pill-ok-bg: #2a3a2a;
+  --pill-ok-ink: #a8c08f;
+  --pill-no-bg: #3a252c;
+  --pill-no-ink: #f0a0aa;
+  --pill-wait-bg: #3a3020;
+  --pill-wait-ink: #e5b65c;
+  --pill-eve-bg: #332a3d;
+  --pill-eve-ink: #c9a9d1;
+  --pill-choice-bg: #24313d;
+  --pill-choice-ink: #92b8d6;
+
+  /* Inverted — a dark toast on a dark page is invisible. */
+  --toast-bg: #efe6dc;
+  --toast-ink: #241e28;
+  --backdrop: rgba(0, 0, 0, 0.62);
+
+  /* Deeper and softer; a daylight shadow vanishes against a dark page. */
+  --card-shadow: 0 34px 80px -30px rgba(0, 0, 0, 0.6), 0 2px 12px rgba(0, 0, 0, 0.35);
+  --dialog-shadow: 0 34px 80px -25px rgba(0, 0, 0, 0.7);
+  --photo-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.5);
+  --toast-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.55);
+}
+
+/* Only the properties that actually differ between themes, so hover and focus
+   transitions elsewhere stay instant. */
+html,
+body,
+.card,
+.guest-row,
+.plus-one,
+.field input,
+.field textarea,
+.guest-check,
+.form-error,
+.submit-btn,
+.toggle-btn,
+.mini-toggle-btn,
+.btn,
+.search,
+.select,
+.table-scroll,
+.invites th,
+.stat,
+.dialog,
+.switch-row,
+.icon-btn,
+.copy-btn {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

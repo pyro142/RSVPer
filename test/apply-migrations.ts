@@ -1,6 +1,11 @@
-import { applyD1Migrations } from 'cloudflare:test';
+import { applyD1Migrations, reset } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
+import { beforeEach } from 'vitest';
 
-// Setup files run outside per-test storage isolation, and applyD1Migrations
-// only applies migrations that haven't run yet, so this is safe to repeat.
-await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+// Every test starts from an empty, freshly migrated database: reset() wipes
+// all local storage, then the migrations rebuild the schema and the default
+// wedding row.
+beforeEach(async () => {
+  await reset();
+  await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+});

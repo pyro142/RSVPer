@@ -26,6 +26,8 @@ export default tseslint.config(
       globals: { ...globals.browser, confetti: 'readonly', turnstile: 'readonly' },
     },
     rules: {
+      // Plain ES5-style browser code: a `self` alias is idiomatic here.
+      '@typescript-eslint/no-this-alias': 'off',
       'no-restricted-properties': [
         'error',
         { property: 'innerHTML', message: 'Use textContent / DOM APIs (XSS).' },
