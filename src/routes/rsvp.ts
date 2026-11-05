@@ -4,7 +4,7 @@
 //   POST /api/rsvp/submit — record a household's reply. One shot, no edits.
 
 import type { Env } from '../env';
-import type { InviteGuestRow, NewRsvpGuest, WeddingRepo } from '../db/repo';
+import type { InviteGuestRow, MenuCourse, NewRsvpGuest, WeddingRepo } from '../db/repo';
 import { isValidCode, normaliseCode } from '../lib/codes';
 import { LookupGuard } from '../lib/guard';
 import { error, json, readJson, clientIp } from '../lib/http';
@@ -95,10 +95,12 @@ export async function lookup(c: Context): Promise<Response> {
 
   c.ctx.waitUntil(c.repo.recordOpen(invite.id));
 
-  const [guests, rsvp] = await Promise.all([
+  const [guests, rsvp, fullMenu] = await Promise.all([
     c.repo.inviteGuests(invite.id),
     c.repo.rsvpForInvite(invite.id),
+    c.settings.features.meals ? c.repo.menu() : Promise.resolve([]),
   ]);
+  const menu = fullMenu.filter((course) => course.options.length > 0);
 
   const evening = c.settings.evening.enabled;
 
@@ -113,7 +115,14 @@ export async function lookup(c: Context): Promise<Response> {
       dietary: c.settings.features.dietary,
       song_request: c.settings.features.song_request,
       message: c.settings.features.message,
+      meals: menu.length > 0,
     },
+    // Active options only; courses with nothing to choose are left out.
+    menu: menu.map((course) => ({
+      id: course.id,
+      name: course.name,
+      options: course.options.map((o) => ({ id: o.id, name: o.name, description: o.description })),
+    })),
     guests: guests.map((g) => ({
       id: g.id,
       name: g.name,
@@ -160,7 +169,8 @@ export async function submit(c: Context): Promise<Response> {
   }
 
   const inviteGuests = await c.repo.inviteGuests(invite.id);
-  const plan = buildGuestRows(body, inviteGuests, invite.max_party_size, c.settings);
+  const menu = c.settings.features.meals ? await c.repo.menu() : [];
+  const plan = buildGuestRows(body, inviteGuests, invite.max_party_size, c.settings, menu);
   if ('error' in plan) return error(plan.error, 400);
 
   const extras = householdExtras(body, c.settings);
@@ -211,14 +221,47 @@ export function buildGuestRows(
   inviteGuests: InviteGuestRow[],
   maxPartySize: number,
   settings: Settings,
+  menu: MenuCourse[] = [],
 ): { rows: NewRsvpGuest[] } | { error: string } {
-  const named = (id: string, attending: boolean, dietary: string | null = null): NewRsvpGuest => ({
+  type Meals = NewRsvpGuest['meals'];
+  const named = (
+    id: string,
+    attending: boolean,
+    dietary: string | null = null,
+    meals: Meals = [],
+  ): NewRsvpGuest => ({
     inviteGuestId: id,
     hostGuestId: null,
     plusOneName: null,
     attending,
     dietaryNotes: dietary,
+    meals,
   });
+
+  // Only courses with at least one active option ask a question.
+  const courses = settings.features.meals ? menu.filter((c) => c.options.length > 0) : [];
+
+  /** One valid, active option per course, or an error naming the person. */
+  function readMeals(raw: unknown, who: string): Meals | { error: string } {
+    if (!courses.length) return [];
+    const picks =
+      raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+    const out: Meals = [];
+    for (const course of courses) {
+      const optionId = picks[course.id];
+      if (typeof optionId !== 'string' || !optionId) {
+        return { error: `Please choose a ${course.name.toLowerCase()} for ${who}.` };
+      }
+      // Must be an active option of THIS course (and so of this wedding).
+      if (!course.options.some((o) => o.id === optionId)) {
+        return {
+          error: 'That menu choice is no longer available. Please refresh and choose again.',
+        };
+      }
+      out.push({ courseId: course.id, optionId });
+    }
+    return out;
+  }
 
   if (!body.attending) {
     return { rows: inviteGuests.map((g) => named(g.id, false)) };
@@ -236,6 +279,8 @@ export function buildGuestRows(
       plusOne: string | null;
       dietary: string | null;
       plusOneDietary: string | null;
+      meals: Meals;
+      plusOneMeals: Meals;
     }
   >();
   const dietaryOn = settings.features.dietary;
@@ -278,7 +323,20 @@ export function buildGuestRows(
       plusOneDietary = plusOne ? cleanBlock(e.plus_one_dietary_notes, LIMITS.dietary) : null;
     }
 
-    submitted.set(guest.id, { attending, plusOne, dietary, plusOneDietary });
+    let meals: Meals = [];
+    let plusOneMeals: Meals = [];
+    if (attending) {
+      const m = readMeals(e.meals, guest.name);
+      if ('error' in m) return m;
+      meals = m;
+      if (plusOne) {
+        const pm = readMeals(e.plus_one_meals, plusOne);
+        if ('error' in pm) return pm;
+        plusOneMeals = pm;
+      }
+    }
+
+    submitted.set(guest.id, { attending, plusOne, dietary, plusOneDietary, meals, plusOneMeals });
   }
 
   const rows: NewRsvpGuest[] = [];
@@ -289,7 +347,7 @@ export function buildGuestRows(
       rows.push(named(guest.id, false));
       continue;
     }
-    rows.push(named(guest.id, choice.attending, choice.dietary));
+    rows.push(named(guest.id, choice.attending, choice.dietary, choice.meals));
     if (choice.plusOne) {
       rows.push({
         inviteGuestId: null,
@@ -297,6 +355,7 @@ export function buildGuestRows(
         plusOneName: choice.plusOne,
         attending: true,
         dietaryNotes: choice.plusOneDietary,
+        meals: choice.plusOneMeals,
       });
     }
   }

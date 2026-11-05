@@ -134,6 +134,12 @@
       title: 'Optional questions',
       help: 'Each one stays completely hidden from guests when it is off.',
       fields: [
+        {
+          key: 'meals',
+          label: 'Meal choices (per guest)',
+          type: 'toggle',
+          hint: 'Each attending guest, including plus ones, picks from your menu. Set the menu below or in Settings → Menu.',
+        },
         { key: 'dietary', label: 'Dietary needs (per guest)', type: 'toggle' },
         { key: 'song_request', label: 'Song request (per household)', type: 'toggle' },
         { key: 'message', label: 'Message to the couple (per household)', type: 'toggle' },

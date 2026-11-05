@@ -35,6 +35,21 @@ export interface NewRsvpGuest {
   plusOneName: string | null;
   attending: boolean;
   dietaryNotes: string | null;
+  /** One chosen option per course, when meal choices are on. */
+  meals: { courseId: string; optionId: string }[];
+}
+
+export interface MenuOption {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface MenuCourse {
+  id: string;
+  name: string;
+  options: MenuOption[];
 }
 
 export interface NewRsvp {
@@ -206,25 +221,37 @@ export class WeddingRepo {
           rsvp.message,
           rsvp.ipHash,
         ),
-      ...rsvp.guests.map((g) =>
-        this.db
-          .prepare(
-            `INSERT INTO rsvp_guests
-               (id, wedding_id, rsvp_id, invite_guest_id, host_guest_id,
-                plus_one_name, attending, dietary_notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .bind(
-            crypto.randomUUID(),
-            this.weddingId,
-            rsvpId,
-            g.inviteGuestId,
-            g.hostGuestId,
-            g.plusOneName,
-            g.attending ? 1 : 0,
-            g.dietaryNotes,
+      ...rsvp.guests.flatMap((g) => {
+        const guestId = crypto.randomUUID();
+        return [
+          this.db
+            .prepare(
+              `INSERT INTO rsvp_guests
+                 (id, wedding_id, rsvp_id, invite_guest_id, host_guest_id,
+                  plus_one_name, attending, dietary_notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .bind(
+              guestId,
+              this.weddingId,
+              rsvpId,
+              g.inviteGuestId,
+              g.hostGuestId,
+              g.plusOneName,
+              g.attending ? 1 : 0,
+              g.dietaryNotes,
+            ),
+          ...g.meals.map((m) =>
+            this.db
+              .prepare(
+                `INSERT INTO rsvp_guest_meals
+                   (id, wedding_id, rsvp_guest_id, course_id, meal_option_id)
+                 VALUES (?, ?, ?, ?, ?)`,
+              )
+              .bind(crypto.randomUUID(), this.weddingId, guestId, m.courseId, m.optionId),
           ),
-      ),
+        ];
+      }),
     ];
     try {
       await this.db.batch(statements);
@@ -232,6 +259,40 @@ export class WeddingRepo {
       if (String(err).includes('UNIQUE')) throw new Error('ALREADY_SUBMITTED', { cause: err });
       throw err;
     }
+  }
+
+  // --- menu -------------------------------------------------------------------
+
+  /** Courses in order, each with its options. Retired options only if asked. */
+  async menu(opts: { includeRetired?: boolean } = {}): Promise<MenuCourse[]> {
+    const [courses, options] = await this.db.batch([
+      this.db
+        .prepare('SELECT id, name FROM meal_courses WHERE wedding_id = ? ORDER BY sort_order, name')
+        .bind(this.weddingId),
+      this.db
+        .prepare(
+          `SELECT id, course_id, name, description, is_active FROM meal_options
+            WHERE wedding_id = ? ORDER BY sort_order, name`,
+        )
+        .bind(this.weddingId),
+    ]);
+    const byCourse = new Map<string, MenuOption[]>();
+    for (const o of options!.results as Record<string, unknown>[]) {
+      if (!o.is_active && !opts.includeRetired) continue;
+      const list = byCourse.get(o.course_id as string) ?? [];
+      list.push({
+        id: o.id as string,
+        name: o.name as string,
+        description: (o.description as string | null) ?? null,
+        is_active: Boolean(o.is_active),
+      });
+      byCourse.set(o.course_id as string, list);
+    }
+    return (courses!.results as { id: string; name: string }[]).map((c) => ({
+      id: c.id,
+      name: c.name,
+      options: byCourse.get(c.id) ?? [],
+    }));
   }
 
   // --- security events --------------------------------------------------------

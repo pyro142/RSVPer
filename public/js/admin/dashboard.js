@@ -121,10 +121,63 @@
       ? s.unopened + ' not opened · ' + s.opened_no_reply + ' opened'
       : '';
     $('statRate').textContent = s.response_rate + '%';
+    renderMeals(s.meals);
+    var f = (state.session && state.session.features) || {};
+    var parts = [];
+    if (f.dietary) parts.push(plural(s.dietary_notes, 'dietary note'));
+    if (f.song_request) parts.push(plural(s.song_requests, 'song request'));
+    if (f.message) parts.push(plural(s.messages, 'message'));
+    $('extrasSummary').hidden = !parts.length;
+    $('extrasSummary').textContent =
+      parts.join(' · ') + (parts.length ? ' — see each household’s View, or Export replies.' : '');
     $('statHeads').textContent =
       evening && s.evening_heads
         ? s.day_heads + ' day · ' + s.evening_heads + ' evening'
         : plural(s.total_heads, 'head') + ' confirmed';
+  }
+
+  function renderMeals(meals) {
+    var box = $('mealCounts');
+    var grid = $('mealGrid');
+    state.optionNames = {};
+    state.courseNames = {};
+    box.hidden = !meals || !meals.courses.length;
+    if (box.hidden) return;
+    grid.textContent = '';
+    meals.courses.forEach(function (course) {
+      state.courseNames[course.id] = course.name;
+      var card = el('div', 'stat meal-card');
+      card.appendChild(el('span', 'stat-label', course.name));
+      var ul = el('ul', 'meal-list');
+      course.options.forEach(function (o) {
+        state.optionNames[o.id] = o.name;
+        if (o.retired && !o.count) return;
+        var li = el('li');
+        li.appendChild(el('span', null, o.name + (o.retired ? ' (retired)' : '')));
+        li.appendChild(el('strong', null, String(o.count)));
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      grid.appendChild(card);
+    });
+    if (meals.without_choice) {
+      grid.appendChild(
+        el('p', 'stat-note', meals.without_choice + ' confirmed guest(s) have no meal choice yet.'),
+      );
+    }
+  }
+
+  function mealSummary(meals) {
+    if (!meals || !state.optionNames) return '';
+    return Object.keys(meals)
+      .map(function (courseId) {
+        return (
+          (state.courseNames[courseId] || 'Meal') +
+          ': ' +
+          (state.optionNames[meals[courseId]] || '?')
+        );
+      })
+      .join(' · ');
   }
 
   function visibleInvites() {
@@ -288,6 +341,8 @@
       var left = el('span');
       left.appendChild(el('span', null, guest.name));
       if (guest.dietary_notes) left.appendChild(el('span', 'view-note', guest.dietary_notes));
+      var gm = mealSummary(guest.meals);
+      if (gm) left.appendChild(el('span', 'view-note', gm));
       li.appendChild(left);
 
       var right = el('span');
@@ -313,6 +368,12 @@
       li.appendChild(right);
       list.appendChild(li);
 
+      var pm = guest.plus_one_name ? mealSummary(guest.plus_one_meals) : '';
+      if (pm) {
+        var mli = el('li');
+        mli.appendChild(el('span', 'view-note', guest.plus_one_name + ' — ' + pm));
+        list.appendChild(mli);
+      }
       if (guest.plus_one_dietary_notes) {
         var pli = el('li');
         pli.appendChild(

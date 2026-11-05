@@ -835,3 +835,38 @@ body {
 .state[hidden] {
   display: none;
 }
+
+/* Meal choices */
+.meals[hidden] {
+  display: none;
+}
+.guest-row > .meals {
+  padding: 0 12px 4px;
+}
+.plus-one-name .meals {
+  margin-top: 8px;
+}
+.meal-field {
+  margin-bottom: 8px;
+}
+
+.meal-field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.meal-field select:focus {
+  border-color: var(--rose);
+  outline: none;
+}
+.meal-field select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}

@@ -13,7 +13,8 @@ import {
   destroyOtherSessions,
   destroySession,
 } from '../auth/session';
-import { AdminRepo, summarise, type AdminInvite } from '../db/admin';
+import { AdminRepo, mealCounts, summarise, type AdminInvite } from '../db/admin';
+import { validateMenu } from '../lib/menu';
 import { generateCode } from '../lib/codes';
 import { timingSafeEqual } from '../lib/crypto';
 import { csvDocument, csvResponse, dateStamp } from '../lib/csv';
@@ -137,8 +138,19 @@ export async function handleAdminApi(c: AdminContext): Promise<Response> {
   if (path === '/setup/complete' && method === 'POST') return completeSetup(c);
 
   if (path === '/stats' && method === 'GET') {
-    return json(summarise(await c.repo.loadInvites()));
+    const invites = await c.repo.loadInvites();
+    const stats = summarise(invites);
+    if (!c.settings.features.meals) return json(stats);
+    const menu = await c.repo.menu({ includeRetired: true });
+    return json({ ...stats, meals: mealCounts(invites, menu) });
   }
+  if (path === '/menu' && method === 'GET') {
+    return json({
+      courses: await c.repo.menu(),
+      usage: Object.fromEntries(await c.repo.optionUsage()),
+    });
+  }
+  if (path === '/menu' && method === 'PUT') return saveMenu(c);
   if (path === '/invites' && method === 'GET') return json({ invites: await c.repo.loadInvites() });
   if (path === '/invites' && method === 'POST') return createInvite(c);
   if (path === '/import' && method === 'POST') return importGuests(c);
@@ -176,6 +188,16 @@ async function session(c: AdminContext): Promise<Response> {
       message:
         'Bot protection (Cloudflare Turnstile) is off. Replies are still rate limited, but adding Turnstile keys is recommended. See the README.',
     });
+  }
+  if (c.settings.features.meals) {
+    const menu = await c.repo.menu();
+    if (!menu.some((course) => course.options.length > 0)) {
+      warnings.push({
+        level: 'warn',
+        message:
+          'Meal choices are on, but there is no menu yet. Add one in Settings → Menu, or guests won’t be asked.',
+      });
+    }
   }
   const events = await c.repo.recentEvents(86400);
   const failed = events.find((e) => e.kind === 'lookup_failed')?.count ?? 0;
@@ -277,6 +299,17 @@ async function completeSetup(c: AdminContext): Promise<Response> {
   if (missing.length) return error(`Please add ${missing.join(' and ')} first.`, 400);
   await c.repo.markSetupComplete();
   return json({ ok: true });
+}
+
+// --- menu ---------------------------------------------------------------------
+
+async function saveMenu(c: AdminContext): Promise<Response> {
+  const body = await readJson(c.request, 64 * 1024);
+  const result = validateMenu(body);
+  if ('error' in result) return error(result.error, 400);
+  const saved = await c.repo.saveMenu(result.value);
+  if (saved.error) return error(saved.error, 409);
+  return json({ courses: await c.repo.menu() });
 }
 
 // --- invites ------------------------------------------------------------------
@@ -410,11 +443,15 @@ async function exportReplies(c: AdminContext): Promise<Response> {
   const s = c.settings;
   const invites = await c.repo.loadInvites();
   const evening = s.evening.enabled;
+  // Include retired options so earlier choices still resolve to a name.
+  const menu = s.features.meals ? await c.repo.menu({ includeRetired: true }) : [];
+  const optionName = new Map(menu.flatMap((course) => course.options.map((o) => [o.id, o.name])));
 
   const header = ['household', 'code', 'link'];
   if (evening) header.push('invited_to');
   header.push('guest_name', 'is_plus_one', 'attending');
   if (evening) header.push('attending_as');
+  for (const course of menu) header.push(`meal: ${course.name}`);
   if (s.features.dietary) header.push('dietary_notes');
   if (s.features.song_request) header.push('song_request');
   if (s.features.message) header.push('message');
@@ -428,12 +465,14 @@ async function exportReplies(c: AdminContext): Promise<Response> {
         plusOne: boolean;
         attending: boolean | null;
         dietary: string | null;
+        meals: Record<string, string>;
       }[] = [
         {
           name: guest.name,
           plusOne: false,
           attending: guest.attending,
           dietary: guest.dietary_notes,
+          meals: guest.meals,
         },
       ];
       if (guest.plus_one_name) {
@@ -442,6 +481,7 @@ async function exportReplies(c: AdminContext): Promise<Response> {
           plusOne: true,
           attending: true,
           dietary: guest.plus_one_dietary_notes,
+          meals: guest.plus_one_meals,
         });
       }
       for (const p of people) {
@@ -460,6 +500,10 @@ async function exportReplies(c: AdminContext): Promise<Response> {
                 : 'full day'
               : '',
           );
+        }
+        for (const course of menu) {
+          const chosen = p.meals[course.id];
+          row.push(chosen ? (optionName.get(chosen) ?? '') : '');
         }
         if (s.features.dietary) row.push(p.dietary ?? '');
         if (s.features.song_request) row.push(p.plusOne ? '' : (invite.song_request ?? ''));

@@ -3,7 +3,8 @@
 
 import { generateCode } from '../lib/codes';
 import type { HouseholdInput } from '../lib/households';
-import { WeddingRepo } from './repo';
+import type { MenuInput } from '../lib/menu';
+import { WeddingRepo, type MenuCourse } from './repo';
 
 export type InviteStatus = 'outstanding' | 'accepted' | 'declined';
 
@@ -16,6 +17,9 @@ export interface AdminGuest {
   dietary_notes: string | null;
   plus_one_name: string | null;
   plus_one_dietary_notes: string | null;
+  /** course_id → chosen option_id. Empty when meals are off or not chosen. */
+  meals: Record<string, string>;
+  plus_one_meals: Record<string, string>;
 }
 
 export interface AdminInvite {
@@ -78,7 +82,7 @@ export class AdminRepo extends WeddingRepo {
    */
   async loadInvites(): Promise<AdminInvite[]> {
     const w = this.weddingId;
-    const [invites, guests, plusOnes] = await this.db.batch([
+    const [invites, guests, plusOnes, meals] = await this.db.batch([
       this.db
         .prepare(
           `SELECT i.id, i.code, i.household_name, i.max_party_size, i.reception_only,
@@ -94,7 +98,7 @@ export class AdminRepo extends WeddingRepo {
       this.db
         .prepare(
           `SELECT ig.id, ig.invite_id, ig.name, ig.allows_plus_one, ig.sort_order,
-                  rg.attending AS rsvp_attending, rg.dietary_notes
+                  rg.id AS rsvp_guest_id, rg.attending AS rsvp_attending, rg.dietary_notes
              FROM invite_guests ig
              LEFT JOIN rsvps r ON r.wedding_id = ig.wedding_id AND r.invite_id = ig.invite_id
              LEFT JOIN rsvp_guests rg
@@ -106,18 +110,35 @@ export class AdminRepo extends WeddingRepo {
         .bind(w),
       this.db
         .prepare(
-          `SELECT rg.host_guest_id, rg.plus_one_name, rg.dietary_notes
+          `SELECT rg.id, rg.host_guest_id, rg.plus_one_name, rg.dietary_notes
              FROM rsvp_guests rg
             WHERE rg.wedding_id = ? AND rg.host_guest_id IS NOT NULL`,
         )
         .bind(w),
+      this.db
+        .prepare(
+          `SELECT rsvp_guest_id, course_id, meal_option_id
+             FROM rsvp_guest_meals WHERE wedding_id = ?`,
+        )
+        .bind(w),
     ]);
 
-    const plusOneByHost = new Map<string, { name: string; dietary: string | null }>();
+    const mealsByGuest = new Map<string, Record<string, string>>();
+    for (const row of meals!.results as Record<string, string>[]) {
+      const m = mealsByGuest.get(row.rsvp_guest_id!) ?? {};
+      m[row.course_id!] = row.meal_option_id!;
+      mealsByGuest.set(row.rsvp_guest_id!, m);
+    }
+
+    const plusOneByHost = new Map<
+      string,
+      { name: string; dietary: string | null; meals: Record<string, string> }
+    >();
     for (const row of plusOnes!.results as Record<string, string | null>[]) {
       plusOneByHost.set(row.host_guest_id!, {
         name: row.plus_one_name!,
         dietary: row.dietary_notes ?? null,
+        meals: mealsByGuest.get(row.id!) ?? {},
       });
     }
 
@@ -135,6 +156,8 @@ export class AdminRepo extends WeddingRepo {
         dietary_notes: (row.dietary_notes as string | null) ?? null,
         plus_one_name: plusOne?.name ?? null,
         plus_one_dietary_notes: plusOne?.dietary ?? null,
+        meals: mealsByGuest.get((row.rsvp_guest_id as string | null) ?? '') ?? {},
+        plus_one_meals: plusOne?.meals ?? {},
       });
     }
 
@@ -328,6 +351,118 @@ export class AdminRepo extends WeddingRepo {
     return (result.meta.changes ?? 0) > 0;
   }
 
+  // --- menu -------------------------------------------------------------------
+
+  /** How many people chose each option (any reply, any wedding state). */
+  async optionUsage(): Promise<Map<string, number>> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT meal_option_id AS id, COUNT(*) AS n FROM rsvp_guest_meals
+          WHERE wedding_id = ? GROUP BY meal_option_id`,
+      )
+      .bind(this.weddingId)
+      .all<{ id: string; n: number }>();
+    return new Map(results.map((r) => [r.id, r.n]));
+  }
+
+  /**
+   * Replace the menu with `input`, preserving existing replies:
+   * - options/courses with a known id are updated in place;
+   * - removed options that guests already chose are retired (hidden from new
+   *   replies, still shown in exports), unused ones are deleted;
+   * - a removed course that has choices is refused.
+   */
+  async saveMenu(input: MenuInput): Promise<{ error?: string }> {
+    const w = this.weddingId;
+    const current = await this.menu({ includeRetired: true });
+    const usage = await this.optionUsage();
+    const currentCourses = new Map(current.map((c) => [c.id, c]));
+    const currentOptions = new Map(
+      current.flatMap((c) => c.options.map((o) => [o.id, { ...o, courseId: c.id }])),
+    );
+
+    const keptCourses = new Set<string>();
+    const keptOptions = new Set<string>();
+    const statements: D1PreparedStatement[] = [];
+
+    input.courses.forEach((course, ci) => {
+      let courseId = course.id && currentCourses.has(course.id) ? course.id : null;
+      if (courseId) {
+        statements.push(
+          this.db
+            .prepare(
+              'UPDATE meal_courses SET name = ?, sort_order = ? WHERE wedding_id = ? AND id = ?',
+            )
+            .bind(course.name, ci, w, courseId),
+        );
+      } else {
+        courseId = crypto.randomUUID();
+        statements.push(
+          this.db
+            .prepare(
+              'INSERT INTO meal_courses (id, wedding_id, name, sort_order) VALUES (?, ?, ?, ?)',
+            )
+            .bind(courseId, w, course.name, ci),
+        );
+      }
+      keptCourses.add(courseId);
+
+      course.options.forEach((option, oi) => {
+        const existing = option.id ? currentOptions.get(option.id) : undefined;
+        if (existing && existing.courseId === courseId) {
+          keptOptions.add(existing.id);
+          statements.push(
+            this.db
+              .prepare(
+                `UPDATE meal_options SET name = ?, description = ?, sort_order = ?, is_active = 1
+                  WHERE wedding_id = ? AND id = ?`,
+              )
+              .bind(option.name, option.description, oi, w, existing.id),
+          );
+        } else {
+          statements.push(
+            this.db
+              .prepare(
+                `INSERT INTO meal_options (id, wedding_id, course_id, name, description, sort_order, is_active)
+                 VALUES (?, ?, ?, ?, ?, ?, 1)`,
+              )
+              .bind(crypto.randomUUID(), w, courseId, option.name, option.description, oi),
+          );
+        }
+      });
+    });
+
+    for (const course of current) {
+      if (keptCourses.has(course.id)) continue;
+      if (course.options.some((o) => usage.has(o.id))) {
+        return {
+          error: `Guests have already chosen from "${course.name}", so it can't be removed. Remove its unused options instead.`,
+        };
+      }
+      statements.push(
+        this.db
+          .prepare('DELETE FROM meal_courses WHERE wedding_id = ? AND id = ?')
+          .bind(w, course.id),
+      );
+    }
+
+    for (const option of currentOptions.values()) {
+      if (keptOptions.has(option.id) || !keptCourses.has(option.courseId)) continue;
+      statements.push(
+        usage.has(option.id)
+          ? this.db
+              .prepare('UPDATE meal_options SET is_active = 0 WHERE wedding_id = ? AND id = ?')
+              .bind(w, option.id)
+          : this.db
+              .prepare('DELETE FROM meal_options WHERE wedding_id = ? AND id = ?')
+              .bind(w, option.id),
+      );
+    }
+
+    if (statements.length) await this.db.batch(statements);
+    return {};
+  }
+
   // --- images -----------------------------------------------------------------
 
   async insertImage(contentType: string, bytes: ArrayBuffer): Promise<string> {
@@ -436,5 +571,38 @@ export function summarise(invites: AdminInvite[]) {
     ),
     song_requests: invites.filter((i) => i.song_request).length,
     messages: invites.filter((i) => i.message).length,
+  };
+}
+
+/** Meal counts for confirmed attendees (accepted households, attending people). */
+export function mealCounts(invites: AdminInvite[], menu: MenuCourse[]) {
+  const counts = new Map<string, number>();
+  let missing = 0;
+  for (const invite of invites) {
+    if (invite.status !== 'accepted') continue;
+    for (const g of invite.guests) {
+      const people: Record<string, string>[] = [];
+      if (g.attending) people.push(g.meals);
+      if (g.attending && g.plus_one_name) people.push(g.plus_one_meals);
+      for (const meals of people) {
+        if (!Object.keys(meals).length) missing++;
+        for (const optionId of Object.values(meals))
+          counts.set(optionId, (counts.get(optionId) ?? 0) + 1);
+      }
+    }
+  }
+  return {
+    courses: menu.map((course) => ({
+      id: course.id,
+      name: course.name,
+      options: course.options.map((o) => ({
+        id: o.id,
+        name: o.name,
+        retired: !o.is_active,
+        count: counts.get(o.id) ?? 0,
+      })),
+    })),
+    // Attending people with no recorded choice (e.g. replied before meals were on).
+    without_choice: missing,
   };
 }

@@ -15,7 +15,7 @@
     { id: 'couple', title: 'Names', sections: ['couple'] },
     { id: 'event', title: 'Date', sections: ['event'] },
     { id: 'venue', title: 'Venue & replies', sections: ['venue', 'rsvp'] },
-    { id: 'features', title: 'Options', sections: ['evening', 'features'] },
+    { id: 'features', title: 'Options', sections: ['evening', 'features'], menu: true },
     { id: 'images', title: 'Pictures', sections: ['images'] },
     { id: 'guests', title: 'Guests', custom: guestsStep },
     { id: 'finish', title: 'Finish', custom: finishStep },
@@ -82,6 +82,18 @@
     forms.forEach(function (f) {
       f.querySelector('.form-actions').hidden = true;
     });
+    if (step.menu) {
+      var menuBox = el('div', 'wizard-menu');
+      menuBox.appendChild(
+        el(
+          'p',
+          'field-hint',
+          'Only needed if you turned on meal choices. Save the menu before continuing.',
+        ),
+      );
+      R.renderMenuEditor(menuBox);
+      panel.appendChild(menuBox);
+    }
 
     var actions = el('div', 'form-actions wizard-actions');
     actions.appendChild(backButton());

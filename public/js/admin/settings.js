@@ -37,6 +37,10 @@
   }
 
   function addNav(id, title) {
+    nav.appendChild(navLink(id, title));
+  }
+
+  function navLink(id, title) {
     var link = el('a', 'settings-link', title);
     link.href = '#' + id;
     link.dataset.panel = id;
@@ -44,7 +48,7 @@
       event.preventDefault();
       show(id);
     });
-    nav.appendChild(link);
+    return link;
   }
 
   function turnstilePanel(meta) {
@@ -142,6 +146,12 @@
           });
           panels.appendChild(panel);
         });
+        // Menu sits after the optional questions it belongs to.
+        var menuPanel = el('section', 'settings-panel');
+        menuPanel.dataset.panel = 'menu';
+        R.renderMenuEditor(menuPanel);
+        nav.insertBefore(navLink('menu', 'Menu'), nav.querySelector('[data-panel="images"]'));
+        panels.insertBefore(menuPanel, panels.querySelector('[data-panel="images"]'));
         addNav('protection', 'Bot protection');
         panels.appendChild(turnstilePanel(data.meta));
         if (session.mode === 'password') {

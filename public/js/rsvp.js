@@ -458,6 +458,53 @@
     return { field: field, input: input };
   }
 
+  /**
+   * One <select> per course for one person. get() returns {course_id:
+   * option_id} or null if any course is unanswered.
+   */
+  function mealFields(prefix, who) {
+    var menu = (invite && invite.menu) || [];
+    if (!features().meals || !menu.length) return null;
+    var wrap = el('div', 'meals');
+    var selects = [];
+    menu.forEach(function (course, ci) {
+      var field = el('div', 'field meal-field');
+      var id = prefix + '-meal-' + ci;
+      var label = el('label', null, course.name + (who ? ' for ' + who : ''));
+      label.htmlFor = id;
+      var select = document.createElement('select');
+      select.id = id;
+      var placeholder = el('option', null, 'Choose…');
+      placeholder.value = '';
+      select.appendChild(placeholder);
+      course.options.forEach(function (o) {
+        var option = el('option', null, o.description ? o.name + ' — ' + o.description : o.name);
+        option.value = o.id;
+        select.appendChild(option);
+      });
+      field.appendChild(label);
+      field.appendChild(select);
+      wrap.appendChild(field);
+      selects.push({ course: course, select: select });
+    });
+    return {
+      node: wrap,
+      reset: function () {
+        selects.forEach(function (s) {
+          s.select.value = '';
+        });
+      },
+      get: function () {
+        var out = {};
+        for (var i = 0; i < selects.length; i++) {
+          if (!selects[i].select.value) return null;
+          out[selects[i].course.id] = selects[i].select.value;
+        }
+        return out;
+      },
+    };
+  }
+
   function buildGuestRow(guest, index) {
     var row = el('div', 'guest-row');
 
@@ -487,6 +534,8 @@
       plusOneInput: null,
       dietaryInput: null,
       plusOneDietaryInput: null,
+      meals: null,
+      plusOneMeals: null,
     };
 
     if (features().dietary) {
@@ -495,6 +544,12 @@
       row.appendChild(diet.field);
       entry.dietaryField = diet.field;
       entry.dietaryInput = diet.input;
+    }
+
+    entry.meals = mealFields('guest-' + index, guest.name);
+    if (entry.meals) {
+      entry.meals.node.classList.add('guest-meals');
+      row.appendChild(entry.meals.node);
     }
 
     if (guest.allows_plus_one) {
@@ -537,6 +592,9 @@
         entry.plusOneDietaryInput = pdiet.input;
       }
 
+      entry.plusOneMeals = mealFields('plus-one-' + index, 'their plus one');
+      if (entry.plusOneMeals) nameField.appendChild(entry.plusOneMeals.node);
+
       block.appendChild(nameField);
       row.appendChild(block);
 
@@ -556,12 +614,14 @@
         nameField.hidden = true;
         nameInput.value = '';
         if (entry.plusOneDietaryInput) entry.plusOneDietaryInput.value = '';
+        if (entry.plusOneMeals) entry.plusOneMeals.reset();
         updatePartyCount();
       });
     }
 
     check.addEventListener('change', function () {
       if (entry.dietaryField) entry.dietaryField.hidden = !check.checked;
+      if (entry.meals) entry.meals.node.hidden = !check.checked;
       if (entry.plusOneBlock) {
         entry.plusOneBlock.hidden = !check.checked;
         if (!check.checked) {
@@ -720,6 +780,17 @@
         return;
       }
 
+      var missingMeal = guestRows.some(function (entry) {
+        if (!entry.checkbox.checked) return false;
+        if (entry.meals && !entry.meals.get()) return true;
+        var bringing = entry.plusOneWanted && entry.plusOneWanted.checked;
+        return !!(bringing && entry.plusOneMeals && !entry.plusOneMeals.get());
+      });
+      if (missingMeal) {
+        show(submitError, 'Please choose a meal for everyone who is coming.');
+        return;
+      }
+
       guests = guestRows.map(function (entry) {
         var coming = entry.checkbox.checked;
         var wantsPlusOne = coming && !!(entry.plusOneWanted && entry.plusOneWanted.checked);
@@ -733,6 +804,8 @@
             wantsPlusOne && entry.plusOneDietaryInput
               ? entry.plusOneDietaryInput.value.trim()
               : null,
+          meals: coming && entry.meals ? entry.meals.get() : null,
+          plus_one_meals: wantsPlusOne && entry.plusOneMeals ? entry.plusOneMeals.get() : null,
         };
       });
     }
