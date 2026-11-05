@@ -10,6 +10,9 @@ wording, the guest list, and the replies.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/pyro142/RSVPer)
 
+## Background & AI Use
+I originally created this project for my own wedding, AI was used to assist in the development. The transition to make it compatible and source available on GitHub was assisted with AI. This includes the onboarding flow, 'Deploy to Cloudflare' button, and QOL features like font changing and colours. These features were implemented almost entirely with the use of AI.
+
 ## Features
 
 - **One-page invitation**, mobile-first, with confetti when someone accepts.
