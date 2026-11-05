@@ -51,19 +51,10 @@
     return link;
   }
 
-  function turnstilePanel(meta) {
+  function turnstilePanel() {
     var panel = el('section', 'settings-panel');
     panel.dataset.panel = 'protection';
-    panel.appendChild(el('h2', 'section-title', 'Bot protection'));
-    panel.appendChild(
-      el(
-        'p',
-        'section-help',
-        meta.turnstile_configured
-          ? 'Cloudflare Turnstile is on. Every reply is checked for bots, invisibly for most guests.'
-          : 'Cloudflare Turnstile is off. Replies are still rate limited and guesses are throttled, but Turnstile is free and recommended. Create a widget in your Cloudflare dashboard, then add TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY to your Worker (Settings → Variables and secrets). See the README for step-by-step instructions.',
-      ),
-    );
+    R.renderTurnstile(panel);
     return panel;
   }
 
@@ -153,7 +144,7 @@
         nav.insertBefore(navLink('menu', 'Menu'), nav.querySelector('[data-panel="images"]'));
         panels.insertBefore(menuPanel, panels.querySelector('[data-panel="images"]'));
         addNav('protection', 'Bot protection');
-        panels.appendChild(turnstilePanel(data.meta));
+        panels.appendChild(turnstilePanel());
         if (session.mode === 'password') {
           addNav('account', 'Admin password');
           panels.appendChild(accountPanel());

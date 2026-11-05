@@ -18,6 +18,7 @@
     { id: 'features', title: 'Options', sections: ['evening', 'features'], menu: true },
     { id: 'images', title: 'Pictures', sections: ['images'] },
     { id: 'guests', title: 'Guests', custom: guestsStep },
+    { id: 'protection', title: 'Bot protection', custom: protectionStep },
     { id: 'finish', title: 'Finish', custom: finishStep },
   ];
 
@@ -240,6 +241,26 @@
     });
   }
 
+  function protectionStep(container) {
+    var next = el('button', 'btn btn-primary', 'Continue');
+    next.type = 'button';
+    next.addEventListener('click', function () {
+      done.protection = true;
+      go(current + 1);
+    });
+    R.renderTurnstile(container, {
+      onSaved: function (state) {
+        meta.turnstile_configured = Boolean(state.source);
+      },
+    });
+    var actions = el('div', 'form-actions wizard-actions');
+    actions.appendChild(backButton());
+    var skip = el('p', 'field-hint', 'Optional. You can skip this and add it later in Settings.');
+    container.appendChild(skip);
+    actions.appendChild(next);
+    container.appendChild(actions);
+  }
+
   function finishStep(container) {
     container.appendChild(el('h2', 'section-title', 'Ready to open your invitation?'));
     container.appendChild(
@@ -254,7 +275,7 @@
         el(
           'p',
           'banner banner-info',
-          'Optional but recommended: turn on Cloudflare Turnstile for bot protection. It is free; see Settings → Bot protection for how.',
+          'Bot protection is off. That’s fine to start with; you can turn it on any time in Settings → Bot protection.',
         ),
       );
     }

@@ -18,14 +18,18 @@
     "run_worker_first": ["/*", "!/css/*", "!/js/*", "!/vendor/*", "!/img/*"],
   },
 
-  // D1 database. There is deliberately no `database_id` here: the Deploy to
-  // Cloudflare button (and `wrangler deploy`) provision one for you. For local
-  // development nothing needs creating; Wrangler keeps a local copy under
-  // .wrangler/. See README → "Manual deploy" if you deploy by hand.
+  // D1 database.
+  //
+  // The all-zero database_id is a placeholder, not a real database. The
+  // Deploy to Cloudflare button creates a database in your account and writes
+  // its real ID into your copy of the repo. Local development doesn't need a
+  // real ID at all. For a manual deploy, run `npx wrangler d1 create rsvper`
+  // and paste the ID it prints here (see README → "Deploy manually").
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "rsvper",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations",
     },
   ],

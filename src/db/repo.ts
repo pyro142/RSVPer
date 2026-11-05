@@ -105,6 +105,46 @@ export class WeddingRepo {
       .run();
   }
 
+  /**
+   * Turnstile keys entered in the admin. Stored under a key that is not a
+   * settings section, so it is never returned by settings() or sent to a
+   * browser. Deploy-time secrets, when present, take precedence.
+   */
+  async turnstileKeys(): Promise<{ site_key: string; secret_key: string } | null> {
+    const row = await this.db
+      .prepare("SELECT value FROM settings WHERE wedding_id = ? AND key = '_turnstile'")
+      .bind(this.weddingId)
+      .first<{ value: string }>();
+    if (!row) return null;
+    try {
+      const v = JSON.parse(row.value) as { site_key?: unknown; secret_key?: unknown };
+      return typeof v.site_key === 'string' && typeof v.secret_key === 'string'
+        ? { site_key: v.site_key, secret_key: v.secret_key }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveTurnstileKeys(keys: { site_key: string; secret_key: string } | null): Promise<void> {
+    if (!keys) {
+      await this.db
+        .prepare("DELETE FROM settings WHERE wedding_id = ? AND key = '_turnstile'")
+        .bind(this.weddingId)
+        .run();
+      return;
+    }
+    await this.db
+      .prepare(
+        `INSERT INTO settings (wedding_id, key, value, updated_at)
+         VALUES (?, '_turnstile', ?, datetime('now'))
+         ON CONFLICT (wedding_id, key)
+         DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      )
+      .bind(this.weddingId, JSON.stringify(keys))
+      .run();
+  }
+
   async hasStoredSection(section: SectionName): Promise<boolean> {
     const row = await this.db
       .prepare('SELECT 1 AS present FROM settings WHERE wedding_id = ? AND key = ?')

@@ -14,7 +14,7 @@ import {
   type HeaderOptions,
 } from './lib/http';
 import { ConfigError } from './lib/identity';
-import { turnstileEnabled } from './lib/turnstile';
+import { turnstileEnabled, withStoredTurnstile } from './lib/turnstile';
 import { handleAdminApi, login, serveMedia } from './routes/admin';
 import { renderCard, robotsTxt } from './routes/card';
 import { lookup, submit } from './routes/rsvp';
@@ -22,25 +22,31 @@ import type { Settings } from './settings';
 import { resolveWeddingId } from './tenant';
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, deployEnv: Env, ctx: ExecutionContext): Promise<Response> {
+    let env = deployEnv;
     const url = new URL(request.url);
     const isApi = url.pathname.startsWith('/api/');
     let headerOptions: HeaderOptions = DEFAULT_HEADER_OPTIONS;
 
     try {
       const repo = new AdminRepo(env.DB, resolveWeddingId(request, env));
-      const settings = await repo.settings();
+      const [settings, turnstileKeys] = await Promise.all([repo.settings(), repo.turnstileKeys()]);
+      env = withStoredTurnstile(deployEnv, turnstileKeys);
       headerOptions = headerOptionsFor(settings, env, url);
 
-      const response = await route(request, env, ctx, url, repo, settings);
+      const response = await route(request, env, ctx, url, repo, settings, deployEnv);
       return applyHeaders(response, securityHeaders(headerOptions));
     } catch (err) {
       // Error boundary: guests get a readable message, details go to the log.
       // Never echo internals (table names, stack traces) back to the browser.
       console.error('Unhandled error', url.pathname, err);
       const configProblem = err instanceof ConfigError;
+      // On admin routes, name the misconfiguration so the couple can fix it.
+      // Guests only ever see a generic message.
       const message = configProblem
-        ? 'This site is not fully configured yet. If you run it, check the deploy secrets and the logs.'
+        ? isAdminPath(url.pathname)
+          ? `Setup problem: ${(err as Error).message} Fix it in the Cloudflare dashboard (your Worker → Settings → Variables and secrets).`
+          : 'This site is not fully configured yet. Please try again later.'
         : 'Something went wrong at our end. Please try again.';
       const status = configProblem ? 503 : 500;
       const response = isApi
@@ -89,11 +95,12 @@ async function route(
   url: URL,
   repo: AdminRepo,
   settings: Settings,
+  deployEnv: Env,
 ): Promise<Response> {
   const { pathname } = url;
   const method = request.method;
 
-  if (isAdminPath(pathname)) return routeAdmin(request, env, url, repo, settings);
+  if (isAdminPath(pathname)) return routeAdmin(request, env, url, repo, settings, deployEnv);
 
   // --- guest API -----------------------------------------------------------
   const c = { request, env, repo, settings, ctx };
@@ -137,6 +144,7 @@ async function routeAdmin(
   url: URL,
   repo: AdminRepo,
   settings: Settings,
+  deployEnv: Env,
 ): Promise<Response> {
   const pathname = url.pathname.replace(/\/+$/, '').replace(/\.html$/, '') || '/';
   const isApi = pathname.startsWith('/api/');
@@ -169,7 +177,7 @@ async function routeAdmin(
   if (isApi) {
     const csrf = await csrfProblem(request, auth);
     if (csrf) return error('Request blocked (CSRF check failed). Please reload the page.', 403);
-    return handleAdminApi({ request, env, url, repo, settings, auth });
+    return handleAdminApi({ request, env, deployEnv, url, repo, settings, auth });
   }
 
   if (request.method !== 'GET' && request.method !== 'HEAD') return methodNotAllowed('GET, HEAD');

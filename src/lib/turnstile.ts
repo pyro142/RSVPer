@@ -4,6 +4,21 @@ import type { Env } from '../env';
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
+export const TURNSTILE_KEY = /^[0-3]x[A-Za-z0-9_-]{10,100}$/;
+
+/**
+ * Fill in Turnstile keys saved from the admin when the deploy-time secrets
+ * aren't set. Secrets always win, so an operator can pin keys at deploy time.
+ */
+export function withStoredTurnstile(
+  env: Env,
+  stored: { site_key: string; secret_key: string } | null,
+): Env {
+  if (env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY) return env;
+  if (!stored) return env;
+  return { ...env, TURNSTILE_SITE_KEY: stored.site_key, TURNSTILE_SECRET_KEY: stored.secret_key };
+}
+
 /** Turnstile is on only when both keys are configured. */
 export function turnstileEnabled(env: Env): boolean {
   return Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY);

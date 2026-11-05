@@ -1390,3 +1390,16 @@ body {
 .extras-summary[hidden] {
   display: none;
 }
+
+.how-to {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.how-to + a {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  color: var(--rose-deep);
+}

@@ -15,25 +15,49 @@
   "scripts": {
     "dev": "node scripts/build.mjs && wrangler d1 migrations apply DB --local && wrangler dev",
     "build": "node scripts/build.mjs",
-    "deploy": "npm run build && wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:seed:local": "node scripts/seed-local.mjs",
     "test": "vitest run",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "cf-typegen": "wrangler types --env-interface Env src/worker-configuration.d.ts"
+    "cf-typegen": "wrangler types --env-interface Env src/worker-configuration.d.ts",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "cloudflare": {
+    "label": "RSVPer \u2014 wedding invitations and RSVPs",
+    "products": [
+      "Workers",
+      "D1"
+    ],
+    "categories": [
+      "storage"
+    ],
     "bindings": {
       "DB": {
-        "description": "D1 database that stores your settings, invites and replies. Created for you automatically."
+        "description": "Stores your settings, invites and replies. Created for you automatically: just pick a name."
       },
       "ADMIN_PASSWORD": {
-        "description": "Password for the /admin dashboard. Use at least 12 characters; a long passphrase is best. You can change it later from Settings."
+        "description": "The password you'll use to sign in at `/admin`. **At least 12 characters**; a few random words works well. You can change it later in Settings."
       },
       "SESSION_SECRET": {
-        "description": "Random secret (at least 32 characters) used to sign admin sessions and key the rate limiter. Generate one with: openssl rand -base64 32"
+        "description": "A long random string that keeps admin sign-ins secure. **At least 32 characters.** Generate one with `openssl rand -base64 32`, or use a password manager's generator. You never need to type it again."
+      },
+      "ADMIN_AUTH_MODE": {
+        "description": "Leave as `password`. Set to `access` only if you protect `/admin` with [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/) and also set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`."
+      },
+      "TURNSTILE_SITE_KEY": {
+        "description": "Optional. You can add [Turnstile](https://developers.cloudflare.com/turnstile/) keys later from the admin instead."
+      },
+      "TURNSTILE_SECRET_KEY": {
+        "description": "Optional. You can add Turnstile keys later from the admin instead."
+      },
+      "ACCESS_TEAM_DOMAIN": {
+        "description": "Only for `ADMIN_AUTH_MODE=access`: your Zero Trust team domain, e.g. `yourteam.cloudflareaccess.com`."
+      },
+      "ACCESS_AUD": {
+        "description": "Only for `ADMIN_AUTH_MODE=access`: the Application Audience (AUD) tag of your Access application."
       }
     }
   },

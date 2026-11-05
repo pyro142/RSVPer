@@ -20,11 +20,11 @@ import { timingSafeEqual } from '../lib/crypto';
 import { csvDocument, csvResponse, dateStamp } from '../lib/csv';
 import { MAX_NAME_LENGTH, MAX_PARTY_SIZE, seatsError, validateHousehold } from '../lib/households';
 import { error, json, readJson } from '../lib/http';
-import { ConfigError, ipHash } from '../lib/identity';
+import { ipHash } from '../lib/identity';
 import { parseGuestCsv } from '../lib/import';
 import { hit, peek } from '../lib/ratelimit';
 import { cleanBlock, cleanLine } from '../lib/text';
-import { turnstileEnabled } from '../lib/turnstile';
+import { TURNSTILE_KEY, turnstileEnabled } from '../lib/turnstile';
 import {
   SECTIONS,
   SettingsError,
@@ -41,6 +41,8 @@ export interface AdminContext {
   repo: AdminRepo;
   settings: Settings;
   auth: AdminAuth & { ok: true };
+  /** The environment as deployed, before admin-saved Turnstile keys are merged in. */
+  deployEnv: Env;
 }
 
 const LOGIN_LIMITS = {
@@ -90,7 +92,12 @@ export async function login(request: Request, env: Env, repo: AdminRepo): Promis
   } else {
     const secret = env.ADMIN_PASSWORD || '';
     if (passwordProblem(secret)) {
-      throw new ConfigError('ADMIN_PASSWORD is missing or shorter than 12 characters.');
+      // Safe to say plainly: it tells the operator what to fix and reveals
+      // nothing about the password itself.
+      return error(
+        'Admin sign-in isn’t set up yet: the ADMIN_PASSWORD secret is missing or shorter than 12 characters. Set it in the Cloudflare dashboard (your Worker → Settings → Variables and secrets), then try again.',
+        503,
+      );
     }
     valid = password !== '' && (await timingSafeEqual(password, secret));
   }
@@ -151,6 +158,12 @@ export async function handleAdminApi(c: AdminContext): Promise<Response> {
     });
   }
   if (path === '/menu' && method === 'PUT') return saveMenu(c);
+  if (path === '/turnstile' && method === 'GET') return getTurnstile(c);
+  if (path === '/turnstile' && method === 'PUT') return putTurnstile(c);
+  if (path === '/turnstile' && method === 'DELETE') {
+    await c.repo.saveTurnstileKeys(null);
+    return getTurnstile(c);
+  }
   if (path === '/invites' && method === 'GET') return json({ invites: await c.repo.loadInvites() });
   if (path === '/invites' && method === 'POST') return createInvite(c);
   if (path === '/import' && method === 'POST') return importGuests(c);
@@ -186,7 +199,7 @@ async function session(c: AdminContext): Promise<Response> {
     warnings.push({
       level: 'info',
       message:
-        'Bot protection (Cloudflare Turnstile) is off. Replies are still rate limited, but adding Turnstile keys is recommended. See the README.',
+        'Bot protection (Cloudflare Turnstile) is off. Replies are still rate limited, but Turnstile is free and recommended: add it in Settings → Bot protection.',
     });
   }
   if (c.settings.features.meals) {
@@ -299,6 +312,44 @@ async function completeSetup(c: AdminContext): Promise<Response> {
   if (missing.length) return error(`Please add ${missing.join(' and ')} first.`, 400);
   await c.repo.markSetupComplete();
   return json({ ok: true });
+}
+
+// --- Turnstile ----------------------------------------------------------------
+
+async function getTurnstile(c: AdminContext): Promise<Response> {
+  const fromDeploy = turnstileEnabled(c.deployEnv);
+  const stored = await c.repo.turnstileKeys();
+  return json({
+    // Where the active keys come from: deploy secrets win over saved keys.
+    source: fromDeploy ? 'deploy' : stored ? 'settings' : null,
+    // The site key is public by design (it ships in the page). The secret is
+    // never returned.
+    site_key: fromDeploy ? c.deployEnv.TURNSTILE_SITE_KEY : (stored?.site_key ?? null),
+    secret_set: fromDeploy || Boolean(stored),
+  });
+}
+
+async function putTurnstile(c: AdminContext): Promise<Response> {
+  const body = await readJson(c.request, 4096);
+  if (!body) return error('Malformed request.', 400);
+  const site = typeof body.site_key === 'string' ? body.site_key.trim() : '';
+  let secret = typeof body.secret_key === 'string' ? body.secret_key.trim() : '';
+  const stored = await c.repo.turnstileKeys();
+  // Leaving the secret blank keeps the one already saved.
+  if (!secret && stored) secret = stored.secret_key;
+  if (!TURNSTILE_KEY.test(site)) {
+    return json({ error: 'That doesn’t look like a Turnstile site key.', field: 'site_key' }, 400);
+  }
+  if (!TURNSTILE_KEY.test(secret)) {
+    return json(
+      { error: 'That doesn’t look like a Turnstile secret key.', field: 'secret_key' },
+      400,
+    );
+  }
+  if (site === secret) return error('The site key and secret key must be different.', 400);
+  await c.repo.saveTurnstileKeys({ site_key: site, secret_key: secret });
+  await c.repo.recordEvent('turnstile_updated', null);
+  return getTurnstile(c);
 }
 
 // --- menu ---------------------------------------------------------------------
