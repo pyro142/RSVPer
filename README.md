@@ -28,6 +28,10 @@ wording, the guest list, and the replies.
   invite links for mail merge.
 - **Everything is set from the admin**: names, date, venue, wording, pictures,
   features. No code changes, no redeploys.
+- **Colours and fonts**: 14 one-tap colour themes (light and dark) or your own two
+  colours, and five self-hosted font pairings. Text, buttons and lines adjust
+  automatically so everything stays readable, on the guest page and in the admin.
+- **Live preview** while you set up and in Settings, including unsaved changes.
 - **Private by default**: hidden from search engines, no analytics, no trackers, no
   third-party fonts or scripts.
 - **Secure by default**: brute-force protection on codes, signed admin sessions,
@@ -103,17 +107,19 @@ npx wrangler secret put SESSION_SECRET
 
 ## First-run setup
 
-The setup wizard walks you through:
+The setup wizard is four short steps, with a **live preview** of your invitation
+beside it (on a wide screen) that updates as you type and that you can click through
+as a guest:
 
-1. **Names**
-2. **Date**, start time, evening reception time, time zone and date format
-3. **Venue** (with an optional map link), **RSVP deadline** and a contact line
-4. **Options**: evening guests, meal choices (and your menu), dietary needs, song
-   requests, messages
-5. **Pictures**: built-in artwork, a link to your own image, or a small upload
-6. **Guests**: import a CSV, or skip and add them from the dashboard
-7. **Bot protection**: optional Turnstile keys
-8. **Finish**: the invitation goes live
+1. **Your wedding**: your names, the date and start time, and the venue
+2. **Look**: a colour theme and font pairing with one tap each (optional)
+3. **Guests**: import a CSV, or skip and add them from the dashboard
+4. **Finish**: the invitation goes live
+
+Time zone and date format are taken from your browser. Evening invites are on by
+default. The finish screen links to the optional extras in Settings: evening reception
+time, meal choices and menu, dietary needs, song requests and messages, RSVP deadline,
+a map link, your own pictures, every line of wording, and bot protection.
 
 Everything can be changed later in **Settings**.
 

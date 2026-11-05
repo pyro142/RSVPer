@@ -19,6 +19,7 @@ import { handleAdminApi, login, serveMedia } from './routes/admin';
 import { renderCard, robotsTxt } from './routes/card';
 import { lookup, submit } from './routes/rsvp';
 import type { Settings } from './settings';
+import { themeCss, validHex } from './theme';
 import { resolveWeddingId } from './tenant';
 
 export default {
@@ -83,8 +84,12 @@ function headerOptionsFor(s: Settings, env: Env, url: URL): HeaderOptions {
     // Admin pages are never indexable, whatever the guest-site setting says.
     noindex: admin || s.privacy.hide_from_search,
     turnstile: !admin && turnstileEnabled(env),
-    // Admin pages can never be framed.
-    frameAncestors: admin ? [] : s.privacy.embed_origins,
+    // Admin pages can never be framed, except the live preview, which only
+    // the admin itself (same origin) may embed.
+    frameAncestors:
+      url.pathname === '/admin/preview' ? ["'self'"] : admin ? [] : s.privacy.embed_origins,
+    // Admin pages may embed the same-origin live preview; guest pages can't.
+    frameSelf: admin,
   };
 }
 
@@ -153,7 +158,7 @@ async function routeAdmin(
   // The only unauthenticated admin routes: the login page and the login call.
   if (pathname === '/admin/login') {
     if (mode !== 'password') return redirect('/admin');
-    return adminPage(request, env, 'login');
+    return adminPage(request, env, 'login', settings);
   }
   if (pathname === '/api/admin/login') {
     return request.method === 'POST' ? login(request, env, repo) : methodNotAllowed('POST');
@@ -182,6 +187,28 @@ async function routeAdmin(
 
   if (request.method !== 'GET' && request.method !== 'HEAD') return methodNotAllowed('GET, HEAD');
 
+  // Theme CSS for unsaved colours, so the live preview can show them without
+  // repeating the colour maths in the browser.
+  if (pathname === '/admin/theme.css') {
+    const css = themeCss({
+      background: validHex(url.searchParams.get('background')),
+      brand: validHex(url.searchParams.get('brand')),
+      font: url.searchParams.get('font'),
+    });
+    return new Response(css, {
+      headers: {
+        'Content-Type': 'text/css; charset=utf-8',
+        // Never cached: it must always reflect the current colour rules.
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
+  if (pathname === '/admin/preview') {
+    const menu = (await repo.menu()).filter((course) => course.options.length > 0);
+    return renderCard(request, env, repo, settings, { menu });
+  }
+
   const page = ADMIN_PAGES[pathname];
   if (!page) return new Response('Not found.', { status: 404 });
 
@@ -189,15 +216,37 @@ async function routeAdmin(
   const wedding = await repo.wedding();
   if (page === 'dashboard' && !wedding?.setup_completed_at) return redirect('/admin/setup');
 
-  return adminPage(request, env, page);
+  return adminPage(request, env, page, settings);
 }
 
-async function adminPage(request: Request, env: Env, name: string): Promise<Response> {
+async function adminPage(
+  request: Request,
+  env: Env,
+  name: string,
+  settings: Settings,
+): Promise<Response> {
   const asset = await env.ASSETS.fetch(new URL(`/admin/${name}.html`, request.url));
   const headers = new Headers(asset.headers);
   headers.set('Cache-Control', 'no-store');
   headers.set('Content-Type', 'text/html; charset=utf-8');
-  return new Response(asset.body, { status: asset.status, headers });
+  const page = new Response(asset.body, { status: asset.status, headers });
+  const css = themeCss(settings.theme);
+  if (!css) return page;
+  // The couple's colours, as validated hex only (see src/theme.ts).
+  return new HTMLRewriter()
+    .on('html', {
+      element(el) {
+        // A chosen background decides light/dark, so the admin's own
+        // dark-mode toggle is hidden (see admin.css).
+        if (settings.theme.background) el.setAttribute('data-fixed-theme', '');
+      },
+    })
+    .on('head', {
+      element(el) {
+        el.append(`<style id="rsvper-theme">${css}</style>`, { html: true });
+      },
+    })
+    .transform(page);
 }
 
 function redirect(location: string): Response {

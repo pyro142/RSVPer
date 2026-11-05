@@ -7,6 +7,8 @@ export interface HeaderOptions {
   turnstile: boolean;
   /** Origins allowed to embed the site in an iframe. Empty = nobody. */
   frameAncestors: string[];
+  /** Allow this page to embed same-origin frames (the admin's live preview). */
+  frameSelf?: boolean;
 }
 
 export const DEFAULT_HEADER_OPTIONS: HeaderOptions = {
@@ -34,7 +36,7 @@ export function contentSecurityPolicy(opts: HeaderOptions): string {
     // https: so couples can point at an image they host elsewhere.
     "img-src 'self' data: https:",
     "connect-src 'self'",
-    `frame-src${turnstile || " 'none'"}`,
+    `frame-src${opts.frameSelf ? " 'self'" : ''}${turnstile || (opts.frameSelf ? '' : " 'none'")}`,
     "form-action 'self'",
     `frame-ancestors ${ancestors}`,
     "base-uri 'none'",

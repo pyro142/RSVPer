@@ -92,7 +92,9 @@
           key: 'map_url',
           label: 'Map link',
           type: 'url',
-          hint: 'Optional. Must start with https://',
+          placeholder: 'https://maps.app.goo.gl/…',
+          hint: 'Optional. Guests can tap the venue name to open it in their maps app.',
+          mapHelp: true,
         },
       ],
     },
@@ -103,7 +105,7 @@
           key: 'deadline',
           label: 'RSVP deadline',
           type: 'date',
-          hint: 'Optional. Replies are refused after this day ends.',
+          hint: 'Optional. Replies are refused after this day ends. Must be on or before the wedding date.',
         },
         {
           key: 'contact',
@@ -342,7 +344,7 @@
       if (field.min !== undefined) input.min = field.min;
       if (field.type === 'number' && field.max) input.max = field.max;
       input.value = value === null || value === undefined ? '' : String(value);
-      if (field.type === 'url') input.placeholder = 'https://';
+      if (field.type === 'url') input.placeholder = field.placeholder || 'https://';
       get = function () {
         if (field.type === 'number') return Number(input.value);
         if (field.type === 'date' || field.type === 'time' || field.type === 'url') {
@@ -431,6 +433,7 @@
         .then(function (result) {
           current = { kind: 'upload', id: result.id };
           status.textContent = 'Uploaded. Remember to save.';
+          wrap.dispatchEvent(new Event('change', { bubbles: true }));
           refresh();
         })
         .catch(function (err) {
@@ -470,14 +473,49 @@
     form.noValidate = true;
     form.dataset.section = section;
 
-    if (!opts.hideTitle) form.appendChild(el('h2', 'section-title', spec.title));
-    if (spec.help) form.appendChild(el('p', 'section-help', spec.help));
+    if (!opts.hideTitle) form.appendChild(el('h2', 'section-title', opts.title || spec.title));
+    var help = opts.help !== undefined ? opts.help : spec.help;
+    if (help) form.appendChild(el('p', 'section-help', help));
 
-    var controls = spec.fields.map(function (field) {
+    // opts.fields: show only these keys (others keep their saved values).
+    var fieldSpecs = spec.fields.filter(function (field) {
+      return !opts.fields || opts.fields.indexOf(field.key) !== -1;
+    });
+    var controls = fieldSpecs.map(function (field) {
       var control = renderField(field, value ? value[field.key] : undefined);
       form.appendChild(control.node);
       return control;
     });
+
+    function payload() {
+      var out = Object.assign({}, opts.extra || {});
+      controls.forEach(function (c) {
+        out[c.key] = c.get();
+      });
+      return out;
+    }
+    function control(key) {
+      return controls.filter(function (c) {
+        return c.key === key;
+      })[0];
+    }
+
+    // Live updates for the setup wizard's preview.
+    if (opts.onChange) {
+      var notify = function () {
+        opts.onChange(section, payload());
+      };
+      form.addEventListener('input', notify);
+      form.addEventListener('change', notify);
+    }
+
+    fieldSpecs.forEach(function (field) {
+      if (field.mapHelp) mapHelp(control(field.key), control('name'), control('address'));
+    });
+
+    if (section === 'rsvp' && opts.weddingDate) {
+      deadlineCheck(control('deadline'), opts.weddingDate);
+    }
 
     var error = el('p', 'dialog-error');
     error.setAttribute('role', 'alert');
@@ -494,7 +532,7 @@
     /** Save this section. Resolves true on success, false on a shown error. */
     function save() {
       error.hidden = true;
-      var payload = {};
+      var payload = Object.assign({}, opts.extra || {});
       controls.forEach(function (c) {
         payload[c.key] = c.get();
       });
@@ -531,6 +569,85 @@
 
     container.appendChild(form);
     return form;
+  }
+
+  /**
+   * How to get a map link, with an example and a button that builds a
+   * Google Maps search link from the venue name and address.
+   */
+  function mapHelp(mapControl, nameControl, addressControl) {
+    if (!mapControl) return;
+    var input = mapControl.node.querySelector('input');
+    var box = el('details', 'map-help');
+    box.appendChild(el('summary', null, 'How do I get a map link?'));
+    var steps = el('ol', 'how-to');
+    [
+      'Open Google Maps (or Apple Maps) and search for your venue.',
+      'Choose Share, then Copy link.',
+      'Paste it here. A Google Maps share link looks like https://maps.app.goo.gl/… ; a full link looks like https://www.google.com/maps/place/Windsor+Castle/…',
+    ].forEach(function (t) {
+      steps.appendChild(el('li', null, t));
+    });
+    box.appendChild(steps);
+    box.appendChild(
+      el(
+        'p',
+        'field-hint',
+        'No link to hand? Use the button below to make one from your venue name, e.g. “Windsor Castle, Windsor” becomes a Google Maps search for it.',
+      ),
+    );
+    var actions = el('div', 'map-help-actions');
+    var make = el('button', 'btn btn-ghost btn-small', 'Make a link from the venue name');
+    make.type = 'button';
+    var test = el('a', 'btn btn-ghost btn-small', 'Test the link');
+    test.target = '_blank';
+    test.rel = 'noopener noreferrer';
+    function refreshTest() {
+      var ok = /^https:\/\//.test(input.value);
+      test.hidden = !ok;
+      if (ok) test.href = input.value;
+    }
+    make.addEventListener('click', function () {
+      var query = [nameControl && nameControl.get(), addressControl && addressControl.get()]
+        .filter(Boolean)
+        .join(', ')
+        .trim();
+      if (!query) {
+        R.notify('Type the venue name first.', true);
+        return;
+      }
+      input.value = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      refreshTest();
+    });
+    input.addEventListener('input', refreshTest);
+    actions.appendChild(make);
+    actions.appendChild(test);
+    box.appendChild(actions);
+    mapControl.node.appendChild(box);
+    refreshTest();
+  }
+
+  /** Warn straight away if the RSVP deadline is after the wedding date. */
+  function deadlineCheck(deadlineControl, weddingDate) {
+    if (!deadlineControl) return;
+    var input = deadlineControl.node.querySelector('input');
+    var warning = el('p', 'field-warning');
+    warning.setAttribute('role', 'alert');
+    warning.hidden = true;
+    deadlineControl.node.appendChild(warning);
+    function check() {
+      var wedding = typeof weddingDate === 'function' ? weddingDate() : weddingDate;
+      var late = input.value && wedding && input.value > wedding;
+      warning.hidden = !late;
+      warning.textContent = late
+        ? 'This is after your wedding date (' + wedding + '). Pick a date on or before the wedding.'
+        : '';
+      if (wedding) input.max = wedding;
+    }
+    input.addEventListener('input', check);
+    input.addEventListener('change', check);
+    check();
   }
 
   R.SETTINGS_SECTIONS = SECTIONS;

@@ -6,9 +6,10 @@
 // fixed Turnstile <script> tag below.
 
 import type { Env } from '../env';
-import type { WeddingRepo } from '../db/repo';
+import type { MenuCourse, WeddingRepo } from '../db/repo';
 import { MAX_CODE_LENGTH, MIN_CODE_LENGTH } from '../lib/codes';
 import { turnstileEnabled } from '../lib/turnstile';
+import { themeCss } from '../theme';
 import {
   coupleNames,
   fill,
@@ -67,11 +68,21 @@ function encodeConfig(value: unknown): string {
 const TURNSTILE_SCRIPT =
   '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>';
 
+/**
+ * Admin-only preview: the real card, kept editable. data-slot markers stay,
+ * removed parts are hidden instead, and the page runs against a sample
+ * household so the couple can click through it without saving anything.
+ */
+export interface PreviewOptions {
+  menu: MenuCourse[];
+}
+
 export async function renderCard(
   request: Request,
   env: Env,
   repo: WeddingRepo,
   settings: Settings,
+  preview: PreviewOptions | null = null,
 ): Promise<Response> {
   const template = await env.ASSETS.fetch(new URL('/index.html', request.url));
   if (!template.ok) return template;
@@ -92,7 +103,10 @@ export async function renderCard(
   });
   const removeIf = (condition: boolean) => ({
     element(el: Element) {
-      if (condition) el.remove();
+      if (!condition) return;
+      // In preview, hide rather than remove, so live edits can bring it back.
+      if (preview) el.setAttribute('hidden', '');
+      else el.remove();
     },
   });
 
@@ -152,18 +166,45 @@ export async function renderCard(
     .on('[data-slot="decoration"]', removeIf(s.images.decoration === 'none'))
     .on('[data-slot="body"]', {
       element(el) {
-        el.setAttribute('data-config', encodeConfig(clientConfig(s, env, ready)));
+        const config = clientConfig(s, env, ready);
+        el.setAttribute(
+          'data-config',
+          encodeConfig(
+            preview
+              ? {
+                  ...config,
+                  ready: true,
+                  closed: false,
+                  turnstile_site_key: null,
+                  preview: { settings: s, menu: preview.menu },
+                }
+              : config,
+          ),
+        );
       },
     })
     .on('head', {
       element(el) {
-        if (turnstileEnabled(env)) el.append(TURNSTILE_SCRIPT, { html: true });
+        if (turnstileEnabled(env) && !preview) el.append(TURNSTILE_SCRIPT, { html: true });
+        // The couple's colours (validated hex only). In preview, always add
+        // the element so live edits can replace it.
+        const css = themeCss(s.theme);
+        if (css || preview) {
+          el.append(`<style id="rsvper-theme">${css}</style>`, { html: true });
+        }
       },
     })
-    // Strip the template's own data-slot markers from the output.
+    .on('body', {
+      element(el) {
+        // Fixed, same-origin script tag; no user data in it.
+        if (preview) el.append('<script src="/js/preview.js" defer></script>', { html: true });
+      },
+    })
+    // Strip the template's own data-slot markers from the output (the
+    // preview keeps them so it can update text live).
     .on('[data-slot]', {
       element(el) {
-        el.removeAttribute('data-slot');
+        if (!preview) el.removeAttribute('data-slot');
       },
     });
 

@@ -222,6 +222,7 @@ describe('submit', () => {
   });
 
   it('ignores an evening-only choice when the feature is off', async () => {
+    await setSettings('evening', { enabled: false });
     await post('/api/rsvp/submit', accept(everyone, { reception_only: true }));
     const row = await env.DB.prepare('SELECT attending_reception_only AS r FROM rsvps').first<{
       r: number;

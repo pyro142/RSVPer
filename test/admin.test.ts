@@ -397,6 +397,7 @@ describe('invites, import and export', () => {
   });
 
   it('refuses evening rows while evening invites are off', async () => {
+    await setSettings('evening', { enabled: false });
     const res = await admin('/api/admin/import', s, {
       method: 'POST',
       json: { csv: 'household,guest,evening\nA,B,yes', dry_run: true },
@@ -405,6 +406,7 @@ describe('invites, import and export', () => {
   });
 
   it('exports replies with formula-injection protection and only enabled columns', async () => {
+    await setSettings('evening', { enabled: false });
     await seedInvite({
       id: 'i1',
       code: 'ABCDEF',

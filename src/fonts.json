@@ -1,0 +1,30 @@
+{
+  "families": {
+    "Fraunces": { "pkg": "fraunces", "fallback": "Georgia, 'Times New Roman', serif" },
+    "Karla": { "pkg": "karla", "fallback": "system-ui, -apple-system, 'Segoe UI', sans-serif" },
+    "Cormorant Garamond": { "pkg": "cormorant-garamond", "fallback": "Georgia, serif" },
+    "Montserrat": { "pkg": "montserrat", "fallback": "system-ui, sans-serif" },
+    "Playfair Display": { "pkg": "playfair-display", "fallback": "Georgia, serif" },
+    "Source Sans 3": { "pkg": "source-sans-3", "fallback": "system-ui, sans-serif" },
+    "Lora": { "pkg": "lora", "fallback": "Georgia, serif" },
+    "Nunito Sans": { "pkg": "nunito-sans", "fallback": "system-ui, sans-serif" },
+    "Inter": { "pkg": "inter", "fallback": "system-ui, sans-serif" }
+  },
+  "pairs": [
+    { "id": "classic", "label": "Classic", "heading": "Fraunces", "body": "Karla" },
+    {
+      "id": "romantic",
+      "label": "Romantic",
+      "heading": "Cormorant Garamond",
+      "body": "Montserrat"
+    },
+    {
+      "id": "timeless",
+      "label": "Timeless",
+      "heading": "Playfair Display",
+      "body": "Source Sans 3"
+    },
+    { "id": "soft", "label": "Soft", "heading": "Lora", "body": "Nunito Sans" },
+    { "id": "modern", "label": "Modern", "heading": "Inter", "body": "Inter" }
+  ]
+}

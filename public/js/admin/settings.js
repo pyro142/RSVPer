@@ -124,6 +124,13 @@
   R.ready(function (session) {
     R.api('/settings')
       .then(function (data) {
+        var settings = data.settings;
+        var pane = R.previewPane({
+          settings: function () {
+            return settings;
+          },
+        });
+        pane.refreshEveningToggle();
         panels.textContent = '';
         ORDER.forEach(function (section) {
           var spec = R.SETTINGS_SECTIONS[section];
@@ -131,16 +138,40 @@
           var panel = el('section', 'settings-panel');
           panel.dataset.panel = section;
           R.renderSection(panel, section, data.settings[section], {
-            onSaved: function () {
+            onChange: pane.onDraft,
+            weddingDate: pane.weddingDate,
+            onSaved: function (value) {
+              settings[section] = value;
+              pane.saved(section);
               R.refreshSession();
             },
           });
           panels.appendChild(panel);
         });
+        // Colours come straight after names.
+        var colourPanel = el('section', 'settings-panel');
+        colourPanel.dataset.panel = 'colours';
+        R.renderColours(colourPanel, {
+          value: data.settings.theme,
+          fontPairs: data.meta.font_pairs,
+          onChange: function (colours) {
+            pane.send({ theme: colours });
+          },
+        });
+        nav.insertBefore(
+          navLink('colours', 'Colours & fonts'),
+          nav.querySelector('[data-panel="event"]'),
+        );
+        panels.insertBefore(colourPanel, panels.querySelector('[data-panel="event"]'));
+
         // Menu sits after the optional questions it belongs to.
         var menuPanel = el('section', 'settings-panel');
         menuPanel.dataset.panel = 'menu';
-        R.renderMenuEditor(menuPanel);
+        R.renderMenuEditor(menuPanel, {
+          onChange: function (menu) {
+            pane.send({ menu: menu });
+          },
+        });
         nav.insertBefore(navLink('menu', 'Menu'), nav.querySelector('[data-panel="images"]'));
         panels.insertBefore(menuPanel, panels.querySelector('[data-panel="images"]'));
         addNav('protection', 'Bot protection');

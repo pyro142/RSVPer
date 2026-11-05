@@ -26,6 +26,7 @@ import { hit, peek } from '../lib/ratelimit';
 import { cleanBlock, cleanLine } from '../lib/text';
 import { TURNSTILE_KEY, turnstileEnabled } from '../lib/turnstile';
 import {
+  FONT_PAIRS,
   SECTIONS,
   SettingsError,
   coupleNames,
@@ -212,6 +213,14 @@ async function session(c: AdminContext): Promise<Response> {
       });
     }
   }
+  const { date } = c.settings.event;
+  const { deadline } = c.settings.rsvp;
+  if (date && deadline && deadline > date) {
+    warnings.push({
+      level: 'warn',
+      message: `Your RSVP deadline (${deadline}) is after your wedding date (${date}). Fix it in Settings → Replies.`,
+    });
+  }
   const events = await c.repo.recentEvents(86400);
   const failed = events.find((e) => e.kind === 'lookup_failed')?.count ?? 0;
   if (failed >= 50) {
@@ -282,6 +291,7 @@ async function getSettings(c: AdminContext): Promise<Response> {
     settings: c.settings,
     meta: {
       auth_mode: c.auth.mode,
+      font_pairs: FONT_PAIRS,
       turnstile_configured: turnstileEnabled(c.env),
       setup_complete: Boolean((await c.repo.wedding())?.setup_completed_at),
     },
@@ -296,12 +306,38 @@ async function putSettings(c: AdminContext, section: string): Promise<Response> 
 
   try {
     const value = validateSection(name, c.settings[name], body);
+    const conflict = dateConflict(c.settings, name, value);
+    if (conflict) return json({ error: conflict.message, field: conflict.field }, 400);
     await c.repo.saveSection(name, value);
     return json({ section: name, value });
   } catch (err) {
     if (err instanceof SettingsError) return json({ error: err.message, field: err.field }, 400);
     throw err;
   }
+}
+
+/** The RSVP deadline must not be after the wedding itself. */
+function dateConflict(
+  current: Settings,
+  section: SectionName,
+  value: unknown,
+): { field: string; message: string } | null {
+  // Only saving the date or the deadline can create a conflict; other
+  // sections (colours, wording…) must save even if older data conflicts.
+  if (section !== 'event' && section !== 'rsvp') return null;
+  const date = section === 'event' ? (value as Settings['event']).date : current.event.date;
+  const deadline =
+    section === 'rsvp' ? (value as Settings['rsvp']).deadline : current.rsvp.deadline;
+  if (!date || !deadline || deadline <= date) return null;
+  return section === 'rsvp'
+    ? {
+        field: 'deadline',
+        message: `The RSVP deadline (${deadline}) is after your wedding date (${date}). Pick a date on or before the wedding.`,
+      }
+    : {
+        field: 'date',
+        message: `Your RSVP deadline (${deadline}) is after this date. Change the deadline under Replies first, or pick a later wedding date.`,
+      };
 }
 
 async function completeSetup(c: AdminContext): Promise<Response> {

@@ -91,6 +91,29 @@ all-zero placeholder `database_id` that the deploy button replaces.
 check), typecheck, tests, a production dependency audit and a bundle dry run on
 every push and pull request to `main`.
 
+**Colours: two stored values, everything else derived.** The `theme` setting
+holds a background and a brand colour (validated `#RRGGBB`, or null for
+RSVPer's own palette). `src/theme.ts` turns them into CSS custom properties,
+mostly with `color-mix()`; the server decides only what CSS can't (is the
+background dark, white or near-black button text), so no colour maths ships to
+guests. Premade themes live only in the admin picker and set both values; no
+theme name is ever stored. Evening guests and the admin's dark mode keep a dark
+surface but take the brand colour. Tests check every premade theme for readable
+text and buttons.
+
+**Fonts.** Five curated pairings (heading + body) defined once in
+`src/fonts.json`, which both the build (to copy only the needed weights from
+`@fontsource`) and the server (to validate the setting and emit
+`--font-serif` / `--font-sans`) read. Stored as `theme.font` next to the two
+colours. Everything is self-hosted; browsers only download faces in use.
+
+**Live preview in the setup wizard and Settings.** `/admin/preview` (admin-only, framable
+only by the admin itself) renders the real guest card against a sample
+household, keeping its `data-slot` markers. `public/js/preview.js` applies
+unsaved values sent by the wizard via `postMessage` (same origin only, text
+only) and fetches derived colours from `/admin/theme.css`. Nothing in the
+preview is saved or sent.
+
 ## Multi-tenancy (not built, but not blocked)
 
 Today there is exactly one wedding, `default`. The groundwork for hosting

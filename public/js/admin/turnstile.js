@@ -67,6 +67,7 @@
     container.appendChild(root);
 
     function render(state) {
+      if (opts.onState) opts.onState(state);
       body.textContent = '';
       if (state.source === 'deploy') {
         status.className = 'banner banner-info';
