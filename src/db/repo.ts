@@ -90,6 +90,14 @@ export class WeddingRepo {
       .run();
   }
 
+  async hasStoredSection(section: SectionName): Promise<boolean> {
+    const row = await this.db
+      .prepare('SELECT 1 AS present FROM settings WHERE wedding_id = ? AND key = ?')
+      .bind(this.weddingId, section)
+      .first();
+    return Boolean(row);
+  }
+
   async markSetupComplete(): Promise<void> {
     await this.db
       .prepare(
@@ -236,6 +244,13 @@ export class WeddingRepo {
         )
         .bind(this.weddingId, kind, ipHash, Math.floor(Date.now() / 1000))
         .run();
+      // Keep the audit trail bounded: drop events older than 90 days, sampled.
+      if (Math.random() < 0.02) {
+        await this.db
+          .prepare('DELETE FROM security_events WHERE wedding_id = ? AND created_at < ?')
+          .bind(this.weddingId, Math.floor(Date.now() / 1000) - 90 * 86400)
+          .run();
+      }
     } catch (err) {
       console.error('Could not record security event', err);
     }

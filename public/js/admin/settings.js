@@ -1,0 +1,159 @@
+/* RSVPer admin — Settings page: one panel per settings section. */
+(function () {
+  'use strict';
+
+  var R = window.RSVPer;
+  var el = R.el;
+  var nav = document.getElementById('settingsNav');
+  var panels = document.getElementById('settingsPanels');
+
+  var ORDER = [
+    'couple',
+    'event',
+    'venue',
+    'rsvp',
+    'evening',
+    'features',
+    'images',
+    'copy',
+    'privacy',
+    'security',
+  ];
+
+  function show(id) {
+    [].forEach.call(panels.children, function (p) {
+      p.hidden = p.dataset.panel !== id;
+    });
+    [].forEach.call(nav.children, function (a) {
+      a.classList.toggle('active', a.dataset.panel === id);
+      if (a.dataset.panel === id) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    try {
+      history.replaceState(null, '', '#' + id);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function addNav(id, title) {
+    var link = el('a', 'settings-link', title);
+    link.href = '#' + id;
+    link.dataset.panel = id;
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      show(id);
+    });
+    nav.appendChild(link);
+  }
+
+  function turnstilePanel(meta) {
+    var panel = el('section', 'settings-panel');
+    panel.dataset.panel = 'protection';
+    panel.appendChild(el('h2', 'section-title', 'Bot protection'));
+    panel.appendChild(
+      el(
+        'p',
+        'section-help',
+        meta.turnstile_configured
+          ? 'Cloudflare Turnstile is on. Every reply is checked for bots, invisibly for most guests.'
+          : 'Cloudflare Turnstile is off. Replies are still rate limited and guesses are throttled, but Turnstile is free and recommended. Create a widget in your Cloudflare dashboard, then add TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY to your Worker (Settings → Variables and secrets). See the README for step-by-step instructions.',
+      ),
+    );
+    return panel;
+  }
+
+  function accountPanel() {
+    var panel = el('section', 'settings-panel');
+    panel.dataset.panel = 'account';
+    panel.appendChild(el('h2', 'section-title', 'Admin password'));
+    panel.appendChild(
+      el(
+        'p',
+        'section-help',
+        'Changing the password here replaces the one you chose when deploying, and signs out every other device.',
+      ),
+    );
+    var form = el('form', 'settings-form');
+    form.noValidate = true;
+    function field(id, label, autocomplete) {
+      var wrap = el('div', 'field');
+      var l = el('label', null, label);
+      l.htmlFor = id;
+      var input = document.createElement('input');
+      input.type = 'password';
+      input.id = id;
+      input.autocomplete = autocomplete;
+      wrap.appendChild(l);
+      wrap.appendChild(input);
+      form.appendChild(wrap);
+      return input;
+    }
+    var current = field('pwCurrent', 'Current password', 'current-password');
+    var next = field('pwNew', 'New password (at least 12 characters)', 'new-password');
+    var again = field('pwAgain', 'New password again', 'new-password');
+    var error = el('p', 'dialog-error');
+    error.hidden = true;
+    form.appendChild(error);
+    var actions = el('div', 'form-actions');
+    var save = el('button', 'btn btn-primary', 'Change password');
+    save.type = 'submit';
+    actions.appendChild(save);
+    form.appendChild(actions);
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      error.hidden = true;
+      if (next.value !== again.value) {
+        error.hidden = false;
+        error.textContent = 'The new passwords don’t match.';
+        return;
+      }
+      save.disabled = true;
+      R.api('/password', { method: 'POST', json: { current: current.value, new: next.value } })
+        .then(function () {
+          current.value = next.value = again.value = '';
+          R.notify('Password changed. Other devices have been signed out.');
+        })
+        .catch(function (err) {
+          error.hidden = false;
+          error.textContent = err.message;
+        })
+        .then(function () {
+          save.disabled = false;
+        });
+    });
+    panel.appendChild(form);
+    return panel;
+  }
+
+  R.ready(function (session) {
+    R.api('/settings')
+      .then(function (data) {
+        panels.textContent = '';
+        ORDER.forEach(function (section) {
+          var spec = R.SETTINGS_SECTIONS[section];
+          addNav(section, spec.title);
+          var panel = el('section', 'settings-panel');
+          panel.dataset.panel = section;
+          R.renderSection(panel, section, data.settings[section], {
+            onSaved: function () {
+              R.refreshSession();
+            },
+          });
+          panels.appendChild(panel);
+        });
+        addNav('protection', 'Bot protection');
+        panels.appendChild(turnstilePanel(data.meta));
+        if (session.mode === 'password') {
+          addNav('account', 'Admin password');
+          panels.appendChild(accountPanel());
+        }
+        var wanted = (location.hash || '').slice(1);
+        show(nav.querySelector('[data-panel="' + wanted + '"]') ? wanted : 'couple');
+      })
+      .catch(function (err) {
+        panels.textContent = '';
+        panels.appendChild(el('p', 'dialog-error', 'Could not load settings: ' + err.message));
+      });
+  });
+})();

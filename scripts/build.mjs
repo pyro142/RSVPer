@@ -17,6 +17,7 @@ const copies = [
   ['node_modules/canvas-confetti/LICENSE', 'confetti/LICENSE'],
   ['node_modules/@fontsource/fraunces/LICENSE', 'fonts/LICENSE-Fraunces.txt'],
   ['node_modules/@fontsource/karla/LICENSE', 'fonts/LICENSE-Karla.txt'],
+  ['examples/guests.csv', 'examples/guests.csv'],
 ];
 
 // Font faces actually used by the card (both OFL-licensed). Latin and

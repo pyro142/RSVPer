@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Sign in · RSVP admin</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+    <script src="/js/theme-init.js"></script>
+  </head>
+  <body class="login-page">
+    <main class="login-card">
+      <h1 class="wizard-title">RSVP admin</h1>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required autofocus />
+        </div>
+        <p class="dialog-error" id="loginError" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Sign in</button>
+      </form>
+      <p class="field-hint">
+        This is the admin area for this invitation. Guests don’t need to sign in. Use the link on
+        your invitation instead.
+      </p>
+    </main>
+    <script src="/js/admin/login.js"></script>
+  </body>
+</html>

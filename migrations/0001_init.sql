@@ -36,6 +36,17 @@ CREATE TABLE settings (
 );
 
 -- ---------------------------------------------------------------------------
+-- admin_credentials — a password set from the admin Settings page. When a row
+-- exists it takes precedence over the ADMIN_PASSWORD deploy secret.
+-- PBKDF2-SHA-256; the hash string records its own parameters.
+-- ---------------------------------------------------------------------------
+CREATE TABLE admin_credentials (
+  wedding_id    TEXT PRIMARY KEY REFERENCES weddings (id) ON DELETE CASCADE,
+  password_hash TEXT NOT NULL,
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ---------------------------------------------------------------------------
 -- admin_sessions — server-side sessions, so logout and password changes can
 -- revoke them. The cookie carries only a random id plus an HMAC.
 -- ---------------------------------------------------------------------------
