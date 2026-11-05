@@ -1,0 +1,30 @@
+# ---------------------------------------------------------------------------
+# Secrets for RSVPer.
+#
+# IMPORTANT: the Deploy to Cloudflare button asks for every UNCOMMENTED line in
+# this file as a required production secret. Only what a first deploy truly
+# needs is uncommented. For local development, copy this file to .dev.vars
+# (which is gitignored) and fill it in.
+# ---------------------------------------------------------------------------
+
+# Password for /admin. At least 12 characters; a long passphrase is best.
+# You can change it later from the admin Settings page.
+ADMIN_PASSWORD=
+
+# Random secret, at least 32 characters. Signs admin sessions and keys the
+# rate limiter. Generate one with:  openssl rand -base64 32
+SESSION_SECRET=
+
+# ---------------------------------------------------------------------------
+# Optional — leave commented out unless you need them.
+# ---------------------------------------------------------------------------
+
+# Cloudflare Turnstile (recommended): stops bots submitting RSVPs.
+# Create a widget at https://dash.cloudflare.com/?to=/:account/turnstile
+# TURNSTILE_SITE_KEY=
+# TURNSTILE_SECRET_KEY=
+
+# Cloudflare Access admin login: only used when ADMIN_AUTH_MODE is "access".
+# Team domain looks like  yourteam.cloudflareaccess.com  (no https://).
+# ACCESS_TEAM_DOMAIN=
+# ACCESS_AUD=
