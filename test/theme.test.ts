@@ -116,6 +116,37 @@ describe('storing colours', () => {
     expect((await admin('/api/admin/settings/theme', 'PUT', { brand: '#12345' })).status).toBe(400);
   });
 
+  it('saves colours even if older date settings conflict', async () => {
+    // Stored before the deadline rule existed: deadline after the wedding.
+    const { setSettings } = await import('./helpers');
+    await setSettings('event', { date: '2030-01-01' });
+    await setSettings('rsvp', { deadline: '2030-02-01' });
+    const res = await admin('/api/admin/settings/theme', 'PUT', { background: '#FFFFFF' });
+    expect(res.status).toBe(200);
+    // …and the dashboard tells them to fix the dates.
+    const session = (await (await admin('/api/admin/session')).json()) as {
+      warnings: { message: string }[];
+    };
+    expect(session.warnings.some((w) => w.message.includes('after your wedding date'))).toBe(true);
+  });
+
+  it('a chosen background applies in the admin whatever its dark-mode toggle says', () => {
+    const css = themeCss({ background: '#FFFFFF', brand: '#1F2D3A' });
+    // One rule covers light admin, dark admin and the guest card; only
+    // evening guests keep the night look.
+    expect(css).toContain(':root:not([data-theme="evening"])');
+    expect(css).toContain('--bg: #FFFFFF');
+    expect(css).toContain('--pill-ok-bg: #EEF2E8'); // light pills restored
+    expect(css).not.toContain('[data-theme="dark"]');
+  });
+
+  it('hides the admin dark-mode toggle only while a background is set', async () => {
+    await admin('/api/admin/settings/theme', 'PUT', { brand: '#1F2D3A' });
+    expect(await (await admin('/admin/settings')).text()).not.toContain('data-fixed-theme');
+    await admin('/api/admin/settings/theme', 'PUT', { background: '#FFFFFF' });
+    expect(await (await admin('/admin/settings')).text()).toContain('data-fixed-theme');
+  });
+
   it('applies the colours to the guest card and admin pages', async () => {
     await markReady();
     await admin('/api/admin/settings/theme', 'PUT', { background: '#0F1B2D', brand: '#E0A526' });

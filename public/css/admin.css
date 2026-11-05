@@ -1698,3 +1698,9 @@ body {
 .colour-status {
   min-height: 1em;
 }
+
+/* A chosen background colour decides light or dark, so the admin's own
+   dark-mode toggle is hidden while one is set. */
+[data-fixed-theme] .theme-btn {
+  display: none;
+}

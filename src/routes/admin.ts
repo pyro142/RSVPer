@@ -212,6 +212,14 @@ async function session(c: AdminContext): Promise<Response> {
       });
     }
   }
+  const { date } = c.settings.event;
+  const { deadline } = c.settings.rsvp;
+  if (date && deadline && deadline > date) {
+    warnings.push({
+      level: 'warn',
+      message: `Your RSVP deadline (${deadline}) is after your wedding date (${date}). Fix it in Settings → Replies.`,
+    });
+  }
   const events = await c.repo.recentEvents(86400);
   const failed = events.find((e) => e.kind === 'lookup_failed')?.count ?? 0;
   if (failed >= 50) {
@@ -312,6 +320,9 @@ function dateConflict(
   section: SectionName,
   value: unknown,
 ): { field: string; message: string } | null {
+  // Only saving the date or the deadline can create a conflict; other
+  // sections (colours, wording…) must save even if older data conflicts.
+  if (section !== 'event' && section !== 'rsvp') return null;
   const date = section === 'event' ? (value as Settings['event']).date : current.event.date;
   const deadline =
     section === 'rsvp' ? (value as Settings['rsvp']).deadline : current.rsvp.deadline;

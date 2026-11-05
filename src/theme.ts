@@ -157,6 +157,31 @@ const DARK_EXTRAS = [
   '--card-shadow: 0 34px 80px -30px rgba(0, 0, 0, 0.6), 0 2px 12px rgba(0, 0, 0, 0.35)',
 ];
 
+/** The template's light tokens, restored when a custom background is light
+ * (so the admin's dark mode doesn't leave dark pills or errors behind). */
+const LIGHT_EXTRAS = [
+  '--gold: #D9A441',
+  '--sage: #7E9668',
+  '--sage-soft: #EEF2E8',
+  '--error-bg: #FDF0F1',
+  '--error-line: #F5D9DC',
+  '--error-ink: #C6505F',
+  '--danger: #C6505F',
+  '--danger-hover: #A63F4C',
+  '--pill-ok-bg: #EEF2E8',
+  '--pill-ok-ink: #7E9668',
+  '--pill-no-bg: #FDF0F1',
+  '--pill-no-ink: #C6505F',
+  '--pill-wait-bg: #FBF1DC',
+  '--pill-wait-ink: #9A7220',
+  '--pill-eve-bg: #EFE6F4',
+  '--pill-eve-ink: #6B4C7A',
+  '--pill-choice-bg: #E4EDF4',
+  '--pill-choice-ink: #3F6280',
+  '--backdrop: rgba(74, 56, 48, 0.42)',
+  '--card-shadow: 0 30px 70px -30px rgba(74, 56, 48, 0.28), 0 2px 10px rgba(74, 56, 48, 0.06)',
+];
+
 /**
  * CSS for a wedding's colours, or '' when both are unset.
  *
@@ -172,23 +197,33 @@ export function themeCss(theme: ThemeColours): string {
   const brand = validHex(theme.brand);
   if (!background && !brand) return '';
 
-  const day: string[] = [];
-  const surface = background ?? TEMPLATE.light.bg;
+  const rules: string[] = [];
+  const nightBg = TEMPLATE.dark.bg;
+  // Keep the brand visible against the night surface.
+  const nightBrand =
+    brand && (oklabDistance(brand, nightBg) < 0.3 ? mix(brand, '#FFFFFF', 0.55) : brand);
+
   if (background) {
-    day.push(...surfaceVars(background));
-    if (isDark(background)) day.push(...DARK_EXTRAS);
+    // A chosen background IS the light/dark choice: it applies to the guest
+    // card and to the admin whatever the admin's own dark-mode toggle says
+    // (the toggle is hidden then). Only evening guests keep the night look.
+    const dark = isDark(background);
+    const vars = [...surfaceVars(background), ...(dark ? DARK_EXTRAS : LIGHT_EXTRAS)];
+    if (brand) vars.push(...accentVars(brand, background, dark));
+    rules.push(`:root:not([data-theme="evening"]) { ${vars.join('; ')}; }`);
+    if (nightBrand) {
+      rules.push(
+        `:root[data-theme="evening"] { ${accentVars(nightBrand, nightBg, true).join('; ')}; }`,
+      );
+    }
+    return rules.join('\n');
   }
-  if (brand) day.push(...accentVars(brand, surface, background ? isDark(background) : false));
 
-  const rules = [`:root:not([data-theme]) { ${day.join('; ')}; }`];
-
-  if (brand) {
-    const nightBg = TEMPLATE.dark.bg;
-    // Keep the brand visible against the night surface.
-    const nightBrand = oklabDistance(brand, nightBg) < 0.3 ? mix(brand, '#FFFFFF', 0.55) : brand;
-    rules.push(
-      `:root[data-theme="evening"], :root[data-theme="dark"] { ${accentVars(nightBrand, nightBg, true).join('; ')}; }`,
-    );
-  }
+  // Brand only: the default light look takes the brand; the night look
+  // (evening guests, admin dark mode) takes a version that stays visible.
+  rules.push(
+    `:root:not([data-theme]) { ${accentVars(brand!, TEMPLATE.light.bg, false).join('; ')}; }`,
+    `:root[data-theme="evening"], :root[data-theme="dark"] { ${accentVars(nightBrand!, nightBg, true).join('; ')}; }`,
+  );
   return rules.join('\n');
 }

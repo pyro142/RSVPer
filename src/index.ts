@@ -232,6 +232,13 @@ async function adminPage(
   if (!css) return page;
   // The couple's colours, as validated hex only (see src/theme.ts).
   return new HTMLRewriter()
+    .on('html', {
+      element(el) {
+        // A chosen background decides light/dark, so the admin's own
+        // dark-mode toggle is hidden (see admin.css).
+        if (settings.theme.background) el.setAttribute('data-fixed-theme', '');
+      },
+    })
     .on('head', {
       element(el) {
         el.append(`<style id="rsvper-theme">${css}</style>`, { html: true });

@@ -299,6 +299,9 @@
   /** Show the colours on this admin page straight away (server derives the CSS). */
   var pageRequest = 0;
   function applyToPage(colours) {
+    // A chosen background decides light/dark; hide the admin's own toggle.
+    if (colours.background) document.documentElement.setAttribute('data-fixed-theme', '');
+    else document.documentElement.removeAttribute('data-fixed-theme');
     var params = new URLSearchParams();
     if (colours.background) params.set('background', colours.background);
     if (colours.brand) params.set('brand', colours.brand);
