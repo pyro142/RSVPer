@@ -20,7 +20,8 @@
     return input;
   }
 
-  function renderMenuEditor(container) {
+  function renderMenuEditor(container, opts) {
+    opts = opts || {};
     var root = el('div', 'menu-editor');
     root.appendChild(el('h2', 'section-title', 'Menu'));
     root.appendChild(
@@ -130,6 +131,31 @@
       };
     }
 
+    // Live updates for the setup wizard's preview: report the menu as typed.
+    var draftId = 0;
+    function draftMenu() {
+      return collect()
+        .courses.filter(function (c) {
+          return c.name && c.options.length;
+        })
+        .map(function (c) {
+          return {
+            id: c.id || 'draft-' + ++draftId,
+            name: c.name,
+            options: c.options.map(function (o) {
+              return { id: o.id || 'draft-' + ++draftId, name: o.name, description: o.description };
+            }),
+          };
+        });
+    }
+    function changed() {
+      if (opts.onChange) opts.onChange(draftMenu());
+    }
+    root.addEventListener('input', changed);
+    root.addEventListener('click', function (event) {
+      if (event.target.closest('button')) setTimeout(changed, 0);
+    });
+
     function load(courses) {
       list.textContent = '';
       courses.forEach(courseBlock);
@@ -164,6 +190,7 @@
         usage = data.usage || {};
         load(data.courses.length ? data.courses : []);
         if (!data.courses.length) courseBlock(null);
+        changed();
       })
       .catch(function (err) {
         error.hidden = false;

@@ -296,12 +296,35 @@ async function putSettings(c: AdminContext, section: string): Promise<Response> 
 
   try {
     const value = validateSection(name, c.settings[name], body);
+    const conflict = dateConflict(c.settings, name, value);
+    if (conflict) return json({ error: conflict.message, field: conflict.field }, 400);
     await c.repo.saveSection(name, value);
     return json({ section: name, value });
   } catch (err) {
     if (err instanceof SettingsError) return json({ error: err.message, field: err.field }, 400);
     throw err;
   }
+}
+
+/** The RSVP deadline must not be after the wedding itself. */
+function dateConflict(
+  current: Settings,
+  section: SectionName,
+  value: unknown,
+): { field: string; message: string } | null {
+  const date = section === 'event' ? (value as Settings['event']).date : current.event.date;
+  const deadline =
+    section === 'rsvp' ? (value as Settings['rsvp']).deadline : current.rsvp.deadline;
+  if (!date || !deadline || deadline <= date) return null;
+  return section === 'rsvp'
+    ? {
+        field: 'deadline',
+        message: `The RSVP deadline (${deadline}) is after your wedding date (${date}). Pick a date on or before the wedding.`,
+      }
+    : {
+        field: 'date',
+        message: `Your RSVP deadline (${deadline}) is after this date. Change the deadline under Replies first, or pick a later wedding date.`,
+      };
 }
 
 async function completeSetup(c: AdminContext): Promise<Response> {

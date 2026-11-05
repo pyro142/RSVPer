@@ -28,6 +28,9 @@ wording, the guest list, and the replies.
   invite links for mail merge.
 - **Everything is set from the admin**: names, date, venue, wording, pictures,
   features. No code changes, no redeploys.
+- **Colour themes**: 14 one-tap themes (light and dark) or your own two colours. Text,
+  buttons and lines adjust automatically so everything stays readable, on the guest
+  page and in the admin.
 - **Private by default**: hidden from search engines, no analytics, no trackers, no
   third-party fonts or scripts.
 - **Secure by default**: brute-force protection on codes, signed admin sessions,
@@ -103,17 +106,20 @@ npx wrangler secret put SESSION_SECRET
 
 ## First-run setup
 
-The setup wizard walks you through:
+The setup wizard walks you through the steps below, with a **live preview** of your
+invitation beside it (on a wide screen) that updates as you type and that you can click
+through as a guest:
 
 1. **Names**
-2. **Date**, start time, evening reception time, time zone and date format
-3. **Venue** (with an optional map link), **RSVP deadline** and a contact line
-4. **Options**: evening guests, meal choices (and your menu), dietary needs, song
-   requests, messages
-5. **Pictures**: built-in artwork, a link to your own image, or a small upload
-6. **Guests**: import a CSV, or skip and add them from the dashboard
-7. **Bot protection**: optional Turnstile keys
-8. **Finish**: the invitation goes live
+2. **Colours**: pick a theme with one tap, or your own background and brand colour
+3. **Date**, start time, evening reception time, time zone and date format
+4. **Venue** (with help getting a map link), **RSVP deadline** and a contact line
+5. **Options**: evening guests (on by default), meal choices (and your menu), dietary
+   needs, song requests, messages
+6. **Pictures**: built-in artwork, a link to your own image, or a small upload
+7. **Guests**: import a CSV, or skip and add them from the dashboard
+8. **Bot protection**: optional Turnstile keys
+9. **Finish**: the invitation goes live
 
 Everything can be changed later in **Settings**.
 

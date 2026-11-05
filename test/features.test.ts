@@ -175,6 +175,7 @@ describe('meal choices', () => {
     });
 
     it('counts meals in stats and adds a column per course to the export', async () => {
+      await setSettings('evening', { enabled: false });
       await post('/api/rsvp/submit', {
         code: 'ABCDEF',
         attending: true,

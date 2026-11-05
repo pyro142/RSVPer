@@ -13,6 +13,7 @@
 
   var STEPS = [
     { id: 'couple', title: 'Names', sections: ['couple'] },
+    { id: 'colours', title: 'Colours', custom: coloursStep },
     { id: 'event', title: 'Date', sections: ['event'] },
     { id: 'venue', title: 'Venue & replies', sections: ['venue', 'rsvp'] },
     { id: 'features', title: 'Options', sections: ['evening', 'features'], menu: true },
@@ -26,6 +27,77 @@
   var meta = null;
   var current = 0;
   var done = {};
+
+  // ---------------------------------------------------------------------
+  // Live preview (desktop): the real guest card in an iframe, fed unsaved
+  // values as the couple types. Same origin only; nothing is saved by it.
+  // ---------------------------------------------------------------------
+  var frame = document.getElementById('previewFrame');
+  var previewReady = false;
+  var pending = { sections: {} };
+  var drafts = {};
+
+  function flushPreview() {
+    if (!previewReady || !frame || !frame.contentWindow) return;
+    pending.type = 'rsvper-preview';
+    frame.contentWindow.postMessage(pending, window.location.origin);
+    pending = { sections: {} };
+  }
+
+  var previewTimer = null;
+  function sendPreview(update) {
+    if (update.sections) Object.assign(pending.sections, update.sections);
+    if (update.menu) pending.menu = update.menu;
+    if (update.evening !== undefined) pending.evening = update.evening;
+    if (update.theme) pending.theme = update.theme;
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(flushPreview, 120);
+  }
+
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    if (!frame || event.source !== frame.contentWindow) return;
+    if (event.data && event.data.type === 'rsvper-preview-ready') {
+      previewReady = true;
+      flushPreview();
+    }
+  });
+
+  var eveningBtn = document.getElementById('previewEveningBtn');
+  [].forEach.call(document.querySelectorAll('[data-preview-as]'), function (button) {
+    button.addEventListener('click', function () {
+      [].forEach.call(document.querySelectorAll('[data-preview-as]'), function (b) {
+        b.classList.toggle('active', b === button);
+        b.setAttribute('aria-pressed', String(b === button));
+      });
+      sendPreview({ evening: button.dataset.previewAs === 'evening' });
+    });
+  });
+
+  function eveningEnabled() {
+    var ev = drafts.evening || (settings && settings.evening) || {};
+    return !!ev.enabled;
+  }
+
+  function refreshEveningToggle() {
+    if (!eveningBtn) return;
+    eveningBtn.disabled = !eveningEnabled();
+    if (eveningBtn.disabled && eveningBtn.classList.contains('active')) {
+      document.querySelector('[data-preview-as="day"]').click();
+    }
+  }
+
+  function onDraft(section, payload) {
+    drafts[section] = payload;
+    var update = {};
+    update[section] = payload;
+    sendPreview({ sections: update });
+    if (section === 'evening') refreshEveningToggle();
+  }
+
+  function weddingDate() {
+    return (drafts.event && drafts.event.date) || (settings && settings.event.date) || null;
+  }
 
   function renderSteps() {
     stepsList.textContent = '';
@@ -74,8 +146,11 @@
     var forms = step.sections.map(function (section) {
       return R.renderSection(panel, section, settings[section], {
         quiet: true,
+        onChange: onDraft,
+        weddingDate: weddingDate,
         onSaved: function (value) {
           settings[section] = value;
+          delete drafts[section];
         },
       });
     });
@@ -92,7 +167,11 @@
           'Only needed if you turned on meal choices. Save the menu before continuing.',
         ),
       );
-      R.renderMenuEditor(menuBox);
+      R.renderMenuEditor(menuBox, {
+        onChange: function (menu) {
+          sendPreview({ menu: menu });
+        },
+      });
       panel.appendChild(menuBox);
     }
 
@@ -136,7 +215,7 @@
         'Import a CSV with one row per guest (columns: household, guest, and optionally plus_one, max_party_size, evening). Or skip this and add invites one at a time from the dashboard.',
       ),
     );
-    var example = el('a', null, 'Download an example CSV');
+    var example = el('a', 'example-link', 'Download an example CSV');
     example.href = '/vendor/examples/guests.csv';
     example.setAttribute('download', '');
     container.appendChild(example);
@@ -241,16 +320,42 @@
     });
   }
 
-  function protectionStep(container) {
+  function coloursStep(container) {
+    R.renderColours(container, {
+      value: settings.theme,
+      onChange: function (colours) {
+        sendPreview({ theme: colours });
+      },
+      onSaved: function (value) {
+        settings.theme = value;
+      },
+    });
+    var actions = el('div', 'form-actions wizard-actions');
+    actions.appendChild(backButton());
     var next = el('button', 'btn btn-primary', 'Continue');
+    next.type = 'button';
+    next.addEventListener('click', function () {
+      done.colours = true;
+      go(current + 1);
+    });
+    actions.appendChild(next);
+    container.appendChild(actions);
+  }
+
+  function protectionStep(container) {
+    // "Skip for now" until keys are saved; then it's a normal Continue.
+    var next = el('button', 'btn btn-ghost', 'Skip for now');
     next.type = 'button';
     next.addEventListener('click', function () {
       done.protection = true;
       go(current + 1);
     });
     R.renderTurnstile(container, {
-      onSaved: function (state) {
-        meta.turnstile_configured = Boolean(state.source);
+      onState: function (state) {
+        var on = Boolean(state.source);
+        meta.turnstile_configured = on;
+        next.textContent = on ? 'Continue' : 'Skip for now';
+        next.className = on ? 'btn btn-primary' : 'btn btn-ghost';
       },
     });
     var actions = el('div', 'form-actions wizard-actions');
@@ -314,6 +419,7 @@
     R.api('/settings').then(function (data) {
       settings = data.settings;
       meta = data.meta;
+      refreshEveningToggle();
       go(0);
     });
   });

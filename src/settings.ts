@@ -92,6 +92,14 @@ export interface Settings {
     song_request: boolean;
     message: boolean;
   };
+  /**
+   * The site's two colours (#RRGGBB). Null means "use RSVPer's own". The
+   * premade themes in the admin only ever set these; no theme name is stored.
+   */
+  theme: {
+    background: string | null;
+    brand: string | null;
+  };
 }
 
 export type ImageRef =
@@ -129,7 +137,7 @@ export const DEFAULTS: Settings = {
     closed_message: 'RSVPs have now closed. Please contact us directly.',
   },
   evening: {
-    enabled: false,
+    enabled: true,
     day_label: 'The whole day',
     evening_label: 'Evening only',
     evening_note: "We'll see you at the reception from {reception_time}.",
@@ -149,6 +157,7 @@ export const DEFAULTS: Settings = {
     submits_per_hour: 5,
   },
   features: { meals: false, dietary: false, song_request: false, message: false },
+  theme: { background: null, brand: null },
 };
 
 export const SECTIONS = Object.keys(DEFAULTS) as SectionName[];
@@ -258,6 +267,16 @@ function origin(value: unknown, field: string): string {
   return new URL(url).origin;
 }
 
+/** #RRGGBB, or null. An empty string clears the colour. */
+function hexColour(raw: Raw, key: string): string | null {
+  const value = raw[key];
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+    throw new SettingsError(key, 'Must be a colour like #1F2D3A.');
+  }
+  return value.toUpperCase();
+}
+
 function timezone(raw: Raw, key: string): string {
   const value = raw[key];
   if (typeof value !== 'string' || value.length > 64) {
@@ -363,6 +382,10 @@ const VALIDATORS: { [K in SectionName]: (raw: Raw) => Settings[K] } = {
       submits_per_hour: int(r, 'submits_per_hour', 2, 60),
     };
   },
+  theme: (r) => ({
+    background: hexColour(r, 'background'),
+    brand: hexColour(r, 'brand'),
+  }),
   features: (r) => ({
     meals: bool(r, 'meals'),
     dietary: bool(r, 'dietary'),

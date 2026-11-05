@@ -814,6 +814,11 @@
   });
 
   function sendRsvp(attending, guests) {
+    if (config.preview) {
+      // Admin preview: nothing is sent or saved.
+      showConfirmation(attending ? 'accepted' : 'declined');
+      return;
+    }
     submitting = true;
     setBusy(rsvpSubmit, true, 'Sending…', 'Send RSVP');
 
@@ -1095,7 +1100,88 @@
   // Boot
   // ---------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------
+  // Admin preview (only when the server rendered /admin/preview)
+  // ---------------------------------------------------------------------
+
+  /** A made-up household that shows every option the couple has turned on. */
+  function sampleInvite(eveningGuest) {
+    var p = config.preview || {};
+    var s = p.settings || {};
+    var f = s.features || {};
+    var evening = !!(s.evening && s.evening.enabled);
+    var menu = (p.menu || []).filter(function (c) {
+      return c.options && c.options.length;
+    });
+    return {
+      household_name: 'The Example Family',
+      max_party_size: 3,
+      reception_only: evening && !!eveningGuest,
+      turnstile_site_key: null,
+      closed: false,
+      already_submitted: false,
+      previous_rsvp: null,
+      features: {
+        evening: evening,
+        dietary: !!f.dietary,
+        song_request: !!f.song_request,
+        message: !!f.message,
+        meals: !!f.meals && menu.length > 0,
+      },
+      menu: menu,
+      guests: [
+        { id: 'preview-1', name: 'Pat Example', allows_plus_one: false },
+        { id: 'preview-2', name: 'Chris Example', allows_plus_one: true },
+      ],
+    };
+  }
+
+  var previewEvening = false;
+
+  /** Re-show the reply form with the latest settings, keeping it interactive. */
+  function refreshPreview(newConfig, opts) {
+    opts = opts || {};
+    if (newConfig) config = newConfig;
+    if (opts.evening !== undefined) previewEvening = !!opts.evening;
+    if (invite && !opts.rebuild && opts.evening === undefined) {
+      // Text-only change: keep whatever the couple has clicked in the preview.
+      applyTheme();
+      return;
+    }
+    invite = sampleInvite(previewEvening);
+    inviteCode = 'PREVIEW';
+    attendYes.checked = false;
+    attendNo.checked = false;
+    scopeDay.checked = true;
+    acceptBranch.hidden = true;
+    declineBranch.hidden = true;
+    scopeNote.hidden = true;
+    buildRsvpForm();
+    refreshExtras();
+    applyTheme();
+    var current = document.querySelector('.state:not([hidden])');
+    if (current !== stateRsvp) {
+      [stateUnready, stateCode, stateDone].forEach(function (n) {
+        n.hidden = true;
+      });
+      stateRsvp.hidden = false;
+    }
+  }
+
+  if (config.preview) {
+    window.RSVPerCard = {
+      config: function () {
+        return config;
+      },
+      refresh: refreshPreview,
+    };
+  }
+
   (function init() {
+    if (config.preview) {
+      refreshPreview(null, { rebuild: true });
+      return;
+    }
     if (!config.ready) {
       goToState(stateUnready, "This invitation isn't ready yet");
       return;

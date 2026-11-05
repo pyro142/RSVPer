@@ -28,23 +28,49 @@
       </div>
     </header>
 
-    <main class="wrap wizard">
-      <div id="warnings" class="banners" hidden></div>
-      <div class="wizard-intro">
-        <h1 class="wizard-title">Let’s set up your invitation</h1>
-        <p class="section-help">
-          A few quick steps. Guests can’t see anything until you finish, and you can change
-          everything later in Settings.
-        </p>
-        <ol class="wizard-steps" id="wizardSteps"></ol>
+    <main class="wrap wizard-layout">
+      <div class="wizard">
+        <div id="warnings" class="banners" hidden></div>
+        <div class="wizard-intro">
+          <h1 class="wizard-title">Let’s set up your invitation</h1>
+          <p class="section-help">
+            A few quick steps. Guests can’t see anything until you finish, and you can change
+            everything later in Settings.
+          </p>
+          <ol class="wizard-steps" id="wizardSteps"></ol>
+        </div>
+        <div class="wizard-panel" id="wizardPanel"></div>
       </div>
-      <div class="wizard-panel" id="wizardPanel"></div>
+
+      <aside class="wizard-preview" aria-label="Live preview of your invitation">
+        <div class="preview-head">
+          <span class="preview-title">Live preview</span>
+          <div class="preview-toggle" role="group" aria-label="Preview as">
+            <button type="button" class="active" data-preview-as="day">Day guest</button>
+            <button type="button" data-preview-as="evening" id="previewEveningBtn">
+              Evening guest
+            </button>
+          </div>
+        </div>
+        <div class="phone-frame">
+          <iframe
+            id="previewFrame"
+            src="/admin/preview"
+            title="Preview of your invitation as a guest would see it"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <p class="field-hint">
+          Updates as you type. Try it out: nothing you do here is saved or sent.
+        </p>
+      </aside>
     </main>
 
     <script src="/js/admin/common.js"></script>
     <script src="/js/admin/fields.js"></script>
     <script src="/js/admin/menu.js"></script>
     <script src="/js/admin/turnstile.js"></script>
+    <script src="/js/admin/colours.js"></script>
     <script src="/js/admin/setup.js"></script>
   </body>
 </html>

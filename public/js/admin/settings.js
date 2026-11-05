@@ -137,6 +137,13 @@
           });
           panels.appendChild(panel);
         });
+        // Colours come straight after names.
+        var colourPanel = el('section', 'settings-panel');
+        colourPanel.dataset.panel = 'colours';
+        R.renderColours(colourPanel, { value: data.settings.theme });
+        nav.insertBefore(navLink('colours', 'Colours'), nav.querySelector('[data-panel="event"]'));
+        panels.insertBefore(colourPanel, panels.querySelector('[data-panel="event"]'));
+
         // Menu sits after the optional questions it belongs to.
         var menuPanel = el('section', 'settings-panel');
         menuPanel.dataset.panel = 'menu';
