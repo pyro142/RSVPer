@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>RSVP admin</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+    <script src="/js/theme-init.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-names" data-couple></span>
+          <span class="brand-sub">RSVP admin</span>
+        </div>
+        <nav class="topbar-actions" aria-label="Admin">
+          <a class="btn btn-ghost" href="/api/admin/links.csv" download>Export links</a>
+          <a class="btn btn-ghost" href="/api/admin/export.csv" download>Export replies</a>
+          <a class="btn btn-ghost" href="/admin/settings">Settings</a>
+          <a class="btn btn-ghost" href="/admin/login" id="signOut">Sign out</a>
+          <button type="button" class="theme-btn" id="themeToggle" aria-pressed="false">
+            <span class="sr-only" id="themeToggleLabel">Switch to dark mode</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <div id="warnings" class="banners" hidden></div>
+
+      <!-- ================= Dashboard ================= -->
+      <section aria-labelledby="statsHeading">
+        <h2 class="sr-only" id="statsHeading">Summary</h2>
+        <div class="stats" id="stats">
+          <div class="stat" data-split>
+            <span class="stat-value" id="statInvites">—</span><span class="stat-label">Invites</span
+            ><span class="stat-note" id="statHeadsInvited"></span>
+            <div class="stat-split" data-evening hidden>
+              <div class="split-cell split-day">
+                <span class="split-num" id="statInvitedDay">—</span
+                ><svg class="split-ico" viewBox="0 0 24 24" aria-label="day guests">
+                  <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+                  <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 2.5v2.6" />
+                    <path d="M12 18.9v2.6" />
+                    <path d="M2.5 12h2.6" />
+                    <path d="M18.9 12h2.6" />
+                    <path d="M5.2 5.2l1.9 1.9" />
+                    <path d="M16.9 16.9l1.9 1.9" />
+                    <path d="M18.8 5.2l-1.9 1.9" />
+                    <path d="M7.1 16.9l-1.9 1.9" />
+                  </g>
+                </svg>
+              </div>
+              <div class="split-cell split-eve">
+                <span class="split-num" id="statInvitedEve">—</span
+                ><svg class="split-ico" viewBox="0 0 24 24" aria-label="evening guests">
+                  <path
+                    d="M20.5 14.3A8.2 8.2 0 1 1 10 3.6a6.4 6.4 0 0 0 10.5 10.7Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="stat stat-accepted" data-split>
+            <span class="stat-value" id="statAccepted">—</span
+            ><span class="stat-label">Accepted</span><span class="stat-note" id="statHeads"></span>
+            <div class="stat-split" data-evening hidden>
+              <div class="split-cell split-day">
+                <span class="split-num" id="statAcceptedDay">—</span
+                ><svg class="split-ico" viewBox="0 0 24 24" aria-label="day guests">
+                  <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+                  <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 2.5v2.6" />
+                    <path d="M12 18.9v2.6" />
+                    <path d="M2.5 12h2.6" />
+                    <path d="M18.9 12h2.6" />
+                    <path d="M5.2 5.2l1.9 1.9" />
+                    <path d="M16.9 16.9l1.9 1.9" />
+                    <path d="M18.8 5.2l-1.9 1.9" />
+                    <path d="M7.1 16.9l-1.9 1.9" />
+                  </g>
+                </svg>
+              </div>
+              <div class="split-cell split-eve">
+                <span class="split-num" id="statAcceptedEve">—</span
+                ><svg class="split-ico" viewBox="0 0 24 24" aria-label="evening guests">
+                  <path
+                    d="M20.5 14.3A8.2 8.2 0 1 1 10 3.6a6.4 6.4 0 0 0 10.5 10.7Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="stat stat-declined">
+            <span class="stat-value" id="statDeclined">—</span
+            ><span class="stat-label">Declined</span>
+          </div>
+          <div class="stat stat-outstanding">
+            <span class="stat-value" id="statOutstanding">—</span
+            ><span class="stat-label">Outstanding</span
+            ><span class="stat-note" id="statOutstandingNote"></span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="statRate">—</span
+            ><span class="stat-label">Response rate</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="meal-counts" id="mealCounts" aria-labelledby="mealHeading" hidden>
+        <h2 class="preview-title" id="mealHeading">Meals (confirmed guests)</h2>
+        <div class="meal-grid" id="mealGrid"></div>
+      </section>
+
+      <p class="extras-summary" id="extrasSummary" hidden></p>
+
+      <!-- ================= Toolbar ================= -->
+      <section class="toolbar" aria-label="Invite actions">
+        <div class="toolbar-left">
+          <label class="sr-only" for="search">Search households</label>
+          <input
+            type="search"
+            id="search"
+            class="search"
+            placeholder="Search household, guest or code…"
+            autocomplete="off"
+          />
+          <label class="sr-only" for="statusFilter">Filter by status</label>
+          <select id="statusFilter" class="select">
+            <option value="all">All statuses</option>
+            <option value="outstanding">Outstanding</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" class="btn btn-ghost" id="bulkBtn">Import CSV</button>
+          <button type="button" class="btn btn-primary" id="addBtn">Add invite</button>
+        </div>
+      </section>
+
+      <!-- ================= Table ================= -->
+      <section aria-labelledby="listHeading">
+        <h2 class="sr-only" id="listHeading">Invites</h2>
+
+        <p class="table-status" id="tableStatus" role="status" aria-live="polite">Loading…</p>
+
+        <div class="table-scroll">
+          <table class="invites" id="invitesTable" hidden>
+            <thead>
+              <tr>
+                <th scope="col">Household</th>
+                <th scope="col">Code</th>
+                <th scope="col" class="num">Max</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">Heads</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="invitesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= Add / edit invite ================= -->
+    <dialog id="inviteDialog" class="dialog">
+      <form method="dialog" class="dialog-inner" id="inviteForm">
+        <h2 class="dialog-title" id="inviteDialogTitle">Add invite</h2>
+
+        <div class="field">
+          <label for="householdInput">Household name</label>
+          <input
+            type="text"
+            id="householdInput"
+            maxlength="120"
+            placeholder="The Example Family"
+            required
+          />
+          <p class="field-hint">Used in the greeting: “Hello, The Example Family”</p>
+        </div>
+
+        <div class="field">
+          <label for="maxPartyInput">Max party size</label>
+          <input type="number" id="maxPartyInput" min="1" max="20" value="2" required />
+          <p class="field-hint">Hard cap on total attendees, plus ones included.</p>
+        </div>
+
+        <label class="switch-row" for="receptionOnlyInput" id="receptionOnlyRow" hidden>
+          <input type="checkbox" id="receptionOnlyInput" />
+          <span class="switch-text">
+            <span class="switch-title">Evening only</span>
+            <span class="switch-hint" id="receptionOnlyHint"
+              >Invited to the reception only. Their card shows the evening time, in the evening
+              colours.</span
+            >
+          </span>
+        </label>
+
+        <fieldset class="guests-editor">
+          <legend>Named guests</legend>
+          <div id="guestEditorRows"></div>
+          <button type="button" class="btn btn-ghost btn-small" id="addGuestRow">
+            + Add guest
+          </button>
+        </fieldset>
+
+        <div class="field">
+          <label for="notesInput">Private notes</label>
+          <textarea
+            id="notesInput"
+            maxlength="1000"
+            rows="2"
+            placeholder="Only you can see these"
+          ></textarea>
+        </div>
+
+        <p class="dialog-error" id="inviteError" role="alert" hidden></p>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveInvite">Save invite</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- ================= Import CSV ================= -->
+    <dialog id="bulkDialog" class="dialog dialog-wide">
+      <form method="dialog" class="dialog-inner">
+        <h2 class="dialog-title">Import guests from CSV</h2>
+        <p class="dialog-help">
+          One row per guest, with a header row. Required columns: <code>household</code> and
+          <code>guest</code>. Optional: <code>plus_one</code> (yes/no),
+          <code>max_party_size</code> and <code>evening</code> (yes/no). Rows with the same
+          household are grouped into one invite.
+          <a href="/vendor/examples/guests.csv" download>Download an example</a>.
+        </p>
+
+        <div class="field">
+          <label for="bulkFile">Choose a CSV file</label>
+          <input type="file" id="bulkFile" accept=".csv,text/csv" />
+        </div>
+        <div class="field">
+          <label for="bulkInput">…or paste it here</label>
+          <textarea
+            id="bulkInput"
+            rows="7"
+            spellcheck="false"
+            placeholder="household,guest,plus_one&#10;The Example Family,Pat Example,no&#10;The Example Family,Chris Example,yes"
+          ></textarea>
+        </div>
+
+        <div class="bulk-preview" id="bulkPreview" hidden>
+          <h3 class="preview-title">Preview</h3>
+          <div class="table-scroll">
+            <table class="invites preview-table">
+              <thead>
+                <tr>
+                  <th scope="col">Household</th>
+                  <th scope="col" class="num">Max</th>
+                  <th scope="col">Guests</th>
+                  <th scope="col">Rows</th>
+                </tr>
+              </thead>
+              <tbody id="bulkPreviewBody"></tbody>
+            </table>
+          </div>
+          <ul class="import-errors" id="bulkErrors"></ul>
+          <p class="preview-summary" id="bulkSummary"></p>
+        </div>
+
+        <p class="dialog-error" id="bulkError" role="alert" hidden></p>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="button" class="btn btn-ghost" id="bulkPreviewBtn">Preview</button>
+          <button type="button" class="btn btn-primary" id="bulkCommit" disabled>Import</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- ================= View household ================= -->
+    <dialog id="viewDialog" class="dialog">
+      <form method="dialog" class="dialog-inner">
+        <h2 class="dialog-title" id="viewTitle">Household</h2>
+        <div id="viewBody"></div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost btn-small" id="regenerateBtn">New code</button>
+          <button type="button" class="btn btn-ghost btn-small" id="resetReplyBtn">
+            Reset reply
+          </button>
+          <button type="button" class="btn btn-primary" data-close>Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- ================= Confirm ================= -->
+    <dialog id="confirmDialog" class="dialog dialog-narrow">
+      <form method="dialog" class="dialog-inner">
+        <h2 class="dialog-title" id="confirmTitle">Are you sure?</h2>
+        <p class="dialog-help" id="confirmBody"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmGo">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/js/admin/common.js"></script>
+    <script src="/js/admin/dashboard.js"></script>
+  </body>
+</html>

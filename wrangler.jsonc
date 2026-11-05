@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "rsvper",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+
+  // One Worker serves the guest card, the admin dashboard and the API.
+  //
+  // Static files live in ./public. The Worker runs first for everything except
+  // the long-lived static folders, so it can add headers that depend on your
+  // settings (e.g. search-engine indexing) and guard /admin.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "run_worker_first": ["/*", "!/css/*", "!/js/*", "!/vendor/*", "!/img/*"],
+  },
+
+  // D1 database.
+  //
+  // The all-zero database_id is a placeholder, not a real database. The
+  // Deploy to Cloudflare button creates a database in your account and writes
+  // its real ID into your copy of the repo. Local development doesn't need a
+  // real ID at all. For a manual deploy, run `npx wrangler d1 create rsvper`
+  // and paste the ID it prints here (see README → "Deploy manually").
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rsvper",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+
+  // Non-secret configuration. Secrets (ADMIN_PASSWORD, SESSION_SECRET and the
+  // optional Turnstile/Access values) are listed in .dev.vars.example.
+  "vars": {
+    // "password" (default) or "access" (Cloudflare Access / Zero Trust).
+    "ADMIN_AUTH_MODE": "password",
+  },
+}

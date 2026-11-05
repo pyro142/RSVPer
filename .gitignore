@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Local secrets — NEVER commit. Copy .dev.vars.example instead.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+
+# Wrangler local state (local D1 lives here)
+.wrangler/
+.mf/
+
+# Build output (vendored fonts + confetti are copied from node_modules)
+public/vendor/
+dist/
+coverage/
+
+# Read-only clone of the private source repo, used for reference only
+_reference/
+
+# Data exports — never commit real guest lists
+*.export.csv
+exports/
+
+.DS_Store
+Thumbs.db
+*.log

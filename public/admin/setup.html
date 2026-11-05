@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Set up your invitation · RSVP admin</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+    <script src="/js/theme-init.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-names" data-couple></span>
+          <span class="brand-sub">Setup</span>
+        </div>
+        <nav class="topbar-actions" aria-label="Admin">
+          <a class="btn btn-ghost" href="/admin/login" id="signOut">Sign out</a>
+          <button type="button" class="theme-btn" id="themeToggle" aria-pressed="false">
+            <span class="sr-only" id="themeToggleLabel">Switch to dark mode</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap wizard">
+      <div id="warnings" class="banners" hidden></div>
+      <div class="wizard-intro">
+        <h1 class="wizard-title">Let’s set up your invitation</h1>
+        <p class="section-help">
+          A few quick steps. Guests can’t see anything until you finish, and you can change
+          everything later in Settings.
+        </p>
+        <ol class="wizard-steps" id="wizardSteps"></ol>
+      </div>
+      <div class="wizard-panel" id="wizardPanel"></div>
+    </main>
+
+    <script src="/js/admin/common.js"></script>
+    <script src="/js/admin/fields.js"></script>
+    <script src="/js/admin/menu.js"></script>
+    <script src="/js/admin/turnstile.js"></script>
+    <script src="/js/admin/setup.js"></script>
+  </body>
+</html>

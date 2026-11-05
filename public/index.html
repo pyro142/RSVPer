@@ -1,0 +1,223 @@
+<!doctype html>
+<!--
+  Guest invite card template.
+
+  This file is never served as-is: src/routes/card.ts fills every data-slot
+  from the couple's settings with HTMLRewriter (text is always escaped), then
+  serves the result. Edit wording in Admin → Settings, not here.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow, noarchive" data-slot="robots" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#FFF8EF" />
+    <title data-slot="title">RSVP</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/rsvp.css" />
+  </head>
+  <body data-slot="body">
+    <div class="page">
+      <main class="card">
+        <div class="card-inner">
+          <header class="masthead">
+            <div class="names">
+              <span class="name" data-slot="name-one"></span>
+              <span class="amp" data-slot="joiner">&amp;</span>
+              <span class="name" data-slot="name-two"></span>
+            </div>
+            <div class="eyebrow" data-slot="headline"></div>
+
+            <div class="details">
+              <div class="line" data-slot="date-line">
+                <span data-slot="date"></span>
+                <span class="dim" id="eventTime" data-slot="time"></span>
+              </div>
+              <div class="line" data-slot="venue-line">
+                <a
+                  class="venue-link"
+                  data-slot="venue-link"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  ><span data-slot="venue-name"></span
+                ></a>
+                <span class="dim" data-slot="venue-address"></span>
+              </div>
+            </div>
+
+            <div class="venue-photo" data-slot="hero-frame">
+              <img
+                id="venuePhoto"
+                data-slot="hero"
+                src="/img/arch.svg"
+                alt=""
+                width="800"
+                height="220"
+              />
+            </div>
+          </header>
+
+          <div class="rule"></div>
+
+          <!-- Announces state changes to screen readers. -->
+          <p class="sr-only" role="status" aria-live="polite" id="stateAnnounce"></p>
+
+          <!-- ================= Not open yet ================= -->
+          <section class="state" id="stateUnready" hidden>
+            <h1 class="state-heading">This invitation isn't ready yet</h1>
+            <p class="state-sub">Please check back soon.</p>
+          </section>
+
+          <!-- ================= STATE 1 · code entry ================= -->
+          <section class="state" id="stateCode" hidden aria-labelledby="codeHeading">
+            <h1 class="state-heading" id="codeHeading" data-slot="code-prompt"></h1>
+            <p class="state-sub" data-slot="code-help"></p>
+
+            <form id="codeForm" novalidate>
+              <div class="field">
+                <label for="codeInput">Invite code</label>
+                <input
+                  type="text"
+                  id="codeInput"
+                  class="code-input"
+                  inputmode="latin"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  maxlength="10"
+                  placeholder="ABC234"
+                  aria-describedby="codeError"
+                  required
+                />
+              </div>
+
+              <div class="turnstile-holder" id="codeTurnstile"></div>
+              <p class="form-error" id="codeError" role="alert" hidden></p>
+
+              <button type="submit" class="submit-btn" id="codeSubmit">Continue</button>
+            </form>
+          </section>
+
+          <!-- ================= STATE 2 · the reply ================= -->
+          <section class="state" id="stateRsvp" hidden aria-labelledby="rsvpHeading">
+            <h1 class="state-heading" id="rsvpHeading">Hello, <span id="householdName"></span></h1>
+            <p class="state-sub" data-slot="intro"></p>
+
+            <form id="rsvpForm" novalidate>
+              <fieldset class="toggle" id="attendingToggle">
+                <legend class="sr-only">Can you join us?</legend>
+
+                <input
+                  type="radio"
+                  name="attending"
+                  id="attendYes"
+                  value="yes"
+                  class="toggle-input"
+                />
+                <label for="attendYes" class="toggle-btn" data-slot="accept-label"></label>
+
+                <input
+                  type="radio"
+                  name="attending"
+                  id="attendNo"
+                  value="no"
+                  class="toggle-input"
+                />
+                <label for="attendNo" class="toggle-btn" data-slot="decline-label"></label>
+              </fieldset>
+
+              <!-- Accept branch -->
+              <div class="branch" id="acceptBranch" hidden>
+                <!-- Only for full-day households when evening invites are on. -->
+                <fieldset class="scope-choice" id="scopeChoice" hidden>
+                  <legend>Which part can you join?</legend>
+
+                  <div class="toggle scope-toggle">
+                    <input
+                      type="radio"
+                      name="scope"
+                      id="scopeDay"
+                      value="day"
+                      class="toggle-input"
+                      checked
+                    />
+                    <label for="scopeDay" class="toggle-btn" data-slot="day-label"></label>
+
+                    <input
+                      type="radio"
+                      name="scope"
+                      id="scopeEvening"
+                      value="evening"
+                      class="toggle-input"
+                    />
+                    <label for="scopeEvening" class="toggle-btn" data-slot="evening-label"></label>
+                  </div>
+
+                  <p class="scope-note" id="scopeNote" data-slot="evening-note" hidden></p>
+                </fieldset>
+
+                <fieldset class="guest-list" id="guestList">
+                  <legend>Who can make it?</legend>
+                  <!-- Guest rows injected by rsvp.js -->
+                </fieldset>
+
+                <p class="party-count" id="partyCount" role="status" aria-live="polite"></p>
+                <p class="form-error" id="capacityError" role="alert" hidden></p>
+              </div>
+
+              <!-- Household extras (each shown only when enabled in settings) -->
+              <div class="extras" id="extras" hidden>
+                <div class="field" id="songField" hidden>
+                  <label for="songInput"
+                    >Song request <span class="optional">(optional)</span></label
+                  >
+                  <input
+                    type="text"
+                    id="songInput"
+                    maxlength="200"
+                    autocomplete="off"
+                    placeholder="What gets you dancing?"
+                  />
+                </div>
+                <div class="field" id="messageField" hidden>
+                  <label for="messageInput"
+                    >A message for us <span class="optional">(optional)</span></label
+                  >
+                  <textarea id="messageInput" maxlength="1000" rows="3"></textarea>
+                </div>
+              </div>
+
+              <!-- Decline branch -->
+              <div class="branch decline-note" id="declineBranch" hidden>
+                <p data-slot="decline-note"></p>
+              </div>
+
+              <div class="turnstile-holder" id="turnstileHolder"></div>
+
+              <p class="form-error" id="submitError" role="alert" hidden></p>
+
+              <button type="submit" class="submit-btn" id="rsvpSubmit" disabled>Send RSVP</button>
+            </form>
+          </section>
+
+          <!-- ================= STATE 3 · confirmation ================= -->
+          <section class="state confirmation" id="stateDone" hidden aria-labelledby="doneHeading">
+            <p class="confirm-display" id="doneHeading"></p>
+            <p class="confirm-body" id="doneMessage"></p>
+            <p class="confirm-foot" data-slot="contact"></p>
+          </section>
+        </div>
+
+        <div class="flowers" data-slot="decoration">
+          <img src="/img/botanical.svg" alt="" />
+        </div>
+      </main>
+    </div>
+
+    <script src="/vendor/confetti/confetti.browser.js" defer></script>
+    <script src="/js/rsvp.js" defer></script>
+  </body>
+</html>

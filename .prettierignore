@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+public/vendor/
+_reference/
+package-lock.json
+src/worker-configuration.d.ts
+migrations/
