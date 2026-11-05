@@ -1,0 +1,15 @@
+# Headers for static files Cloudflare serves directly (css, js, img, vendor).
+# Pages and API responses get their headers from the Worker instead, which
+# overrides or removes these according to your settings.
+
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cross-Origin-Resource-Policy: same-origin
+
+/img/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'
+
+/vendor/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; font-src 'self'

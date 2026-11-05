@@ -6,7 +6,7 @@
 
 // C0/C1 control characters, plus bidi overrides that can disguise text.
 // eslint-disable-next-line no-control-regex
-const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F‪-‮⁦-⁩]/g;
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g;
 
 /** Single-line text: names, titles. Collapses all whitespace. */
 export function cleanLine(raw: unknown, maxLength: number): string | null {

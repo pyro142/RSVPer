@@ -1,0 +1,3 @@
+# False positive in an earlier commit: a code comment naming the password
+# hashing algorithm was matched by the generic-api-key rule. Not a secret.
+c091326be44cde179de1293a82eb1122cb7eb048:src/auth/password.ts:generic-api-key:1

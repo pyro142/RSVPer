@@ -49,7 +49,7 @@ describe('invite codes', () => {
 
 describe('CSV', () => {
   it('parses quotes, escaped quotes, CRLF and a BOM', () => {
-    const rows = parseCsv('﻿a,"b, c","say ""hi"""\r\n1,2,3\n');
+    const rows = parseCsv('\uFEFFa,"b, c","say ""hi"""\r\n1,2,3\n');
     expect(rows).toEqual([
       ['a', 'b, c', 'say "hi"'],
       ['1', '2', '3'],
@@ -62,7 +62,7 @@ describe('CSV', () => {
 
   it('defuses spreadsheet formulas on export', () => {
     for (const bad of ['=1+1', '+cmd', '-2', '@SUM(A1)']) expect(csvCell(bad)).toBe(`"'${bad}"`);
-    expect(csvCell('Ann "Jo" Smith')).toBe('"Ann ""Jo"" Smith"');
+    expect(csvCell('Ann "Jo" Example')).toBe('"Ann ""Jo"" Example"');
   });
 });
 
@@ -104,12 +104,23 @@ describe('guest import validation', () => {
 
 describe('text sanitising', () => {
   it('strips control and bidi characters and collapses whitespace', () => {
-    expect(cleanLine('  Ann\u0000‮  Smith\n', 40)).toBe('Ann Smith');
+    expect(cleanLine('  Ann\u0000\u202E  Example\n', 40)).toBe('Ann Example');
     expect(cleanBlock('Line one\r\n\r\n\r\n\r\nLine two\u0007', 100)).toBe('Line one\n\nLine two');
   });
 
   it('enforces length limits by characters, not bytes', () => {
     expect(cleanLine('é'.repeat(10), 10)).toBe('é'.repeat(10));
     expect(cleanLine('x'.repeat(11), 10)).toBeNull();
+  });
+});
+
+describe('rate-limit identity', () => {
+  it('groups IPv6 by /64 and keeps IPv4 as-is', async () => {
+    const { rateLimitKey } = await import('../src/lib/identity');
+    expect(rateLimitKey('203.0.113.7')).toBe('203.0.113.7');
+    expect(rateLimitKey('::ffff:203.0.113.7')).toBe('203.0.113.7');
+    expect(rateLimitKey('2001:db8:1:2:aaaa::1')).toBe('2001:db8:1:2::/64');
+    expect(rateLimitKey('2001:0db8:0001:0002:ffff:ffff:ffff:ffff')).toBe('2001:db8:1:2::/64');
+    expect(rateLimitKey('2001:db8::1')).toBe('2001:db8:0:0::/64');
   });
 });

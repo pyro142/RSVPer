@@ -1,4 +1,4 @@
-// Password hashing: PBKDF2-SHA-256 via WebCrypto (no dependencies).
+// Admin password hashing with PBKDF2 (SHA-256) via WebCrypto (no dependencies).
 //
 // 100,000 iterations is the most the Workers runtime allows for PBKDF2. The
 // stored format records algorithm, iterations and salt, so the cost can be

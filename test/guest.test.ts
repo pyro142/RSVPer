@@ -245,3 +245,20 @@ describe('submit', () => {
     expect((await post('/api/rsvp/submit', accept(everyone))).status).toBe(429);
   });
 });
+
+describe('IPv6 rate limiting', () => {
+  beforeEach(standardFixture);
+
+  it('treats addresses in the same /64 as one visitor', async () => {
+    await setSettings('security', { lookup_failures_per_hour: 3 });
+    for (let i = 1; i <= 3; i++) {
+      await post('/api/rsvp/lookup', { code: 'ZZZZZZ' }, `2001:db8:1:2::${i}`);
+    }
+    expect((await post('/api/rsvp/lookup', { code: 'ABCDEF' }, '2001:db8:1:2::99')).status).toBe(
+      429,
+    );
+    expect((await post('/api/rsvp/lookup', { code: 'ABCDEF' }, '2001:db8:1:3::1')).status).toBe(
+      200,
+    );
+  });
+});

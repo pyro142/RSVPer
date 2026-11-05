@@ -293,7 +293,7 @@ describe('song request and message', () => {
     attending: true,
     guests: [{ invite_guest_id: 'g-1' }],
     song_request: 'Dancing Queen',
-    message: 'Congratulations!\u0007‮',
+    message: 'Congratulations!\u0007\u202E',
   };
 
   it('are ignored when off', async () => {

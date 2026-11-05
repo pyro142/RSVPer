@@ -57,8 +57,17 @@ export function securityHeaders(opts: HeaderOptions): Record<string, string> {
   return headers;
 }
 
+/** Headers that may be absent on purpose, depending on settings. */
+const OPTIONAL_HEADERS = ['X-Robots-Tag', 'X-Frame-Options', 'Content-Security-Policy'];
+
+/**
+ * Set the security headers on a response, and remove any optional header that
+ * the settings say should not be there (e.g. a static-file X-Robots-Tag when
+ * the couple has allowed indexing).
+ */
 export function applyHeaders(response: Response, headers: Record<string, string>): Response {
   const out = new Response(response.body, response);
+  for (const name of OPTIONAL_HEADERS) out.headers.delete(name);
   for (const [key, value] of Object.entries(headers)) out.headers.set(key, value);
   return out;
 }
