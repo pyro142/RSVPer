@@ -173,7 +173,12 @@
     if (hex.test(theme.background || '')) params.set('background', theme.background);
     if (hex.test(theme.brand || '')) params.set('brand', theme.brand);
     var id = ++themeRequest;
-    fetch('/admin/theme.css?' + params.toString(), { credentials: 'same-origin' })
+    // v= gives a fresh address, skipping any copy cached by an older version.
+    params.set('v', '2');
+    fetch('/admin/theme.css?' + params.toString(), {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
       .then(function (res) {
         return res.ok ? res.text() : '';
       })

@@ -197,7 +197,8 @@ async function routeAdmin(
     return new Response(css, {
       headers: {
         'Content-Type': 'text/css; charset=utf-8',
-        'Cache-Control': 'private, max-age=3600',
+        // Never cached: it must always reflect the current colour rules.
+        'Cache-Control': 'no-store',
       },
     });
   }

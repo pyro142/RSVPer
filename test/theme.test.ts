@@ -160,6 +160,7 @@ describe('storing colours', () => {
     ).toBe(302);
     const ok = await admin('/admin/theme.css?brand=%23E0A526');
     expect(ok.headers.get('Content-Type')).toContain('text/css');
+    expect(ok.headers.get('Cache-Control')).toBe('no-store');
     expect(await ok.text()).toContain('--rose: #E0A526');
     const bad = await admin('/admin/theme.css?brand=%3C%2Fstyle%3E');
     expect(await bad.text()).toBe('');
