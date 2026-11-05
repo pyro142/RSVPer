@@ -5,17 +5,23 @@
 // protected by existing, not by remembering to call something.
 //
 // There is no development bypass of any kind: local dev uses password mode
-// with the values in .dev.vars, exactly like production.
+// with the values in .dev.vars, exactly like production. The public demo
+// (DEMO_MODE=true) skips sign-in, but only ever for a visitor's own
+// throwaway sandbox, never a real wedding (see src/demo.ts).
 
 import type { Env } from '../env';
 import { timingSafeEqual } from '../lib/crypto';
 import { ConfigError } from '../lib/identity';
+import { isDemo } from '../demo';
 import { verifyAccess } from './access';
 import { readSession, type SessionRow } from './session';
 
-export type AuthMode = 'password' | 'access';
+export type AuthMode = 'password' | 'access' | 'demo';
 
 export function authMode(env: Env): AuthMode {
+  // The public demo (DEMO_MODE=true, wrangler.demo.jsonc only): no sign-in,
+  // because every visitor only ever reaches their own throwaway sandbox.
+  if (isDemo(env)) return 'demo';
   const mode = (env.ADMIN_AUTH_MODE || 'password').trim().toLowerCase();
   if (mode === 'password' || mode === 'access') return mode;
   // An unknown value must never fall through to "no auth".
@@ -25,6 +31,7 @@ export function authMode(env: Env): AuthMode {
 export type AdminAuth =
   | { ok: true; mode: 'password'; session: SessionRow; identity: string }
   | { ok: true; mode: 'access'; session: null; identity: string }
+  | { ok: true; mode: 'demo'; session: null; identity: string }
   | { ok: false; mode: AuthMode; status: 401 | 403; reason: string };
 
 export async function authenticateAdmin(
@@ -33,6 +40,14 @@ export async function authenticateAdmin(
   weddingId: string,
 ): Promise<AdminAuth> {
   const mode = authMode(env);
+
+  if (mode === 'demo') {
+    // Belt and braces: demo access only ever applies to a demo sandbox.
+    if (!weddingId.startsWith('demo-')) {
+      return { ok: false, mode, status: 403, reason: 'not-a-sandbox' };
+    }
+    return { ok: true, mode, session: null, identity: 'demo visitor' };
+  }
 
   if (mode === 'access') {
     const result = await verifyAccess(request, env);

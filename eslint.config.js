@@ -4,7 +4,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/', '.wrangler/', 'public/vendor/', '_reference/', 'coverage/'],
+    ignores: ['node_modules/', '**/.wrangler/', 'public/vendor/', '_reference/', 'coverage/'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -114,6 +114,14 @@ unsaved values sent by the wizard via `postMessage` (same origin only, text
 only) and fetches derived colours from `/admin/theme.css`. Nothing in the
 preview is saved or sent.
 
+**Public demo.** With `DEMO_MODE=true` (only in `wrangler.demo.jsonc`), each
+visitor gets a sandbox wedding (`demo-…`) seeded with made-up data, found by a
+random cookie and deleted after 24 hours. Admin needs no sign-in there, but
+only for sandbox weddings; the real `default` wedding is never resolved in demo
+mode. Cross-wedding queries for sandbox housekeeping carry a
+`/* tenant-admin: … */` comment so the scoping check (and reviewers) can see
+them. See `docs/demo.md`.
+
 ## Multi-tenancy (not built, but not blocked)
 
 Today there is exactly one wedding, `default`. The groundwork for hosting

@@ -10,6 +10,9 @@ wording, the guest list, and the replies.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/pyro142/RSVPer)
 
+**[Try the demo](https://demo.rsvper.app/admin)**: a made-up wedding you can click around,
+with no sign-up. Your changes are only visible to you and are deleted after 24 hours.
+
 ## Background & AI Use
 
 I originally created this project for my own wedding, AI was used to assist in the development. The transition to make it compatible and source available on GitHub was assisted with AI. This includes the onboarding flow, 'Deploy to Cloudflare' button, and QOL features like font changing and colours. These features were implemented almost entirely with the use of AI.

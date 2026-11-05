@@ -3,6 +3,9 @@ export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
 
+  /** Only "true" on the public demo (wrangler.demo.jsonc). Never set otherwise. */
+  DEMO_MODE?: string;
+
   /** "password" (default) or "access". */
   ADMIN_AUTH_MODE?: string;
 

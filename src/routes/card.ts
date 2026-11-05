@@ -10,6 +10,8 @@ import type { MenuCourse, WeddingRepo } from '../db/repo';
 import { MAX_CODE_LENGTH, MIN_CODE_LENGTH } from '../lib/codes';
 import { turnstileEnabled } from '../lib/turnstile';
 import { themeCss } from '../theme';
+import { isDemo } from '../demo';
+import { demoBanner, DEMO_STYLES } from '../demo-banner';
 import {
   coupleNames,
   fill,
@@ -186,6 +188,7 @@ export async function renderCard(
     .on('head', {
       element(el) {
         if (turnstileEnabled(env) && !preview) el.append(TURNSTILE_SCRIPT, { html: true });
+        if (isDemo(env) && !preview) el.append(DEMO_STYLES, { html: true });
         // The couple's colours (validated hex only). In preview, always add
         // the element so live edits can replace it.
         const css = themeCss(s.theme);
@@ -198,6 +201,8 @@ export async function renderCard(
       element(el) {
         // Fixed, same-origin script tag; no user data in it.
         if (preview) el.append('<script src="/js/preview.js" defer></script>', { html: true });
+        // Public demo banner (fixed markup), but not inside the admin preview.
+        if (isDemo(env) && !preview) el.prepend(demoBanner('guest'), { html: true });
       },
     })
     // Strip the template's own data-slot markers from the output (the

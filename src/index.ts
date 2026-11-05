@@ -21,6 +21,32 @@ import { lookup, submit } from './routes/rsvp';
 import type { Settings } from './settings';
 import { themeCss, validHex } from './theme';
 import { resolveWeddingId } from './tenant';
+import { demoBanner as demoBannerHtml, DEMO_STYLES } from './demo-banner';
+import { DemoBusyError, demoCookie, isDemo, resetSandbox, resolveSandbox } from './demo';
+
+/**
+ * Demo-only routes that must not create a sandbox: robots.txt (crawlers) and
+ * the "Reset demo" form, which deletes the visitor's sandbox.
+ */
+async function demoEarlyResponse(request: Request, env: Env, url: URL): Promise<Response | null> {
+  if (url.pathname === '/robots.txt') {
+    return new Response('User-agent: *\nDisallow: /\n', {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+  if (url.pathname === '/demo/reset' && request.method === 'POST') {
+    // No origin check here on purpose: with our no-referrer policy, browsers
+    // send "Origin: null" for form posts, and the worst a cross-site post could
+    // do is reset the visitor's own throwaway sandbox.
+    await resetSandbox(request, env);
+    // Pages say where to return to (Referer is never sent: no-referrer policy).
+    const target = url.searchParams.get('to') === 'admin' ? '/admin' : '/';
+    const res = new Response(null, { status: 303, headers: { Location: target } });
+    res.headers.append('Set-Cookie', demoCookie('', 0));
+    return res;
+  }
+  return null;
+}
 
 export default {
   async fetch(request: Request, deployEnv: Env, ctx: ExecutionContext): Promise<Response> {
@@ -30,13 +56,35 @@ export default {
     let headerOptions: HeaderOptions = DEFAULT_HEADER_OPTIONS;
 
     try {
-      const repo = new AdminRepo(env.DB, resolveWeddingId(request, env));
+      let weddingId = resolveWeddingId(request, env);
+      let sandboxCookie: string | null = null;
+      if (isDemo(deployEnv)) {
+        const early = await demoEarlyResponse(request, deployEnv, url);
+        if (early) return applyHeaders(early, securityHeaders(headerOptions));
+        try {
+          const sandbox = await resolveSandbox(request, deployEnv);
+          weddingId = sandbox.weddingId;
+          sandboxCookie = sandbox.setCookie;
+        } catch (err) {
+          if (!(err instanceof DemoBusyError)) throw err;
+          return applyHeaders(
+            new Response('The demo is busy right now. Please try again in a little while.', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '600' },
+            }),
+            securityHeaders(headerOptions),
+          );
+        }
+      }
+      const repo = new AdminRepo(env.DB, weddingId);
       const [settings, turnstileKeys] = await Promise.all([repo.settings(), repo.turnstileKeys()]);
       env = withStoredTurnstile(deployEnv, turnstileKeys);
       headerOptions = headerOptionsFor(settings, env, url);
 
       const response = await route(request, env, ctx, url, repo, settings, deployEnv);
-      return applyHeaders(response, securityHeaders(headerOptions));
+      const out = applyHeaders(response, securityHeaders(headerOptions));
+      if (sandboxCookie) out.headers.append('Set-Cookie', sandboxCookie);
+      return out;
     } catch (err) {
       // Error boundary: guests get a readable message, details go to the log.
       // Never echo internals (table names, stack traces) back to the browser.
@@ -231,9 +279,9 @@ async function adminPage(
   headers.set('Content-Type', 'text/html; charset=utf-8');
   const page = new Response(asset.body, { status: asset.status, headers });
   const css = themeCss(settings.theme);
-  if (!css) return page;
+  if (!css) return demoBanner(env, new HTMLRewriter()).transform(page);
   // The couple's colours, as validated hex only (see src/theme.ts).
-  return new HTMLRewriter()
+  return demoBanner(env, new HTMLRewriter())
     .on('html', {
       element(el) {
         // A chosen background decides light/dark, so the admin's own
@@ -247,6 +295,22 @@ async function adminPage(
       },
     })
     .transform(page);
+}
+
+/** Adds the demo banner to a page when running as the public demo. */
+function demoBanner(env: Env, rewriter: HTMLRewriter): HTMLRewriter {
+  if (!isDemo(env)) return rewriter;
+  return rewriter
+    .on('head', {
+      element(el) {
+        el.append(DEMO_STYLES, { html: true });
+      },
+    })
+    .on('body', {
+      element(el) {
+        el.prepend(demoBannerHtml('admin'), { html: true });
+      },
+    });
 }
 
 function redirect(location: string): Response {

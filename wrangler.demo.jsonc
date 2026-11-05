@@ -1,0 +1,34 @@
+{
+  // The public demo (demo.rsvper.app). NOT used by the Deploy to Cloudflare
+  // button or by `npm run deploy`. Deploy it with `npm run deploy:demo`.
+  //
+  // DEMO_MODE gives every visitor their own throwaway copy of made-up data
+  // with no sign-in (see src/demo.ts). Never set DEMO_MODE on a real site.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "rsvper-demo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "run_worker_first": ["/*", "!/css/*", "!/js/*", "!/vendor/*", "!/img/*"],
+  },
+  // A separate database from any real wedding. Create it with
+  //   npx wrangler d1 create rsvper-demo
+  // and paste the id it prints here.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rsvper-demo",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "DEMO_MODE": "true",
+    "ADMIN_AUTH_MODE": "password",
+  },
+}

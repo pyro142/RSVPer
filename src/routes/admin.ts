@@ -136,6 +136,16 @@ export async function handleAdminApi(c: AdminContext): Promise<Response> {
   const path = url.pathname.slice('/api/admin'.length) || '/';
   const method = request.method;
 
+  // Things that make no sense, or could be abused, in the public demo.
+  if (
+    c.auth.mode === 'demo' &&
+    ((path === '/password' && method === 'POST') ||
+      (path === '/turnstile' && method !== 'GET') ||
+      (path === '/images' && method === 'POST'))
+  ) {
+    return error('That isn’t available in the demo.', 403);
+  }
+
   if (path === '/session' && method === 'GET') return session(c);
   if (path === '/logout' && method === 'POST') return logout(c);
   if (path === '/password' && method === 'POST') return changePassword(c);
@@ -196,7 +206,7 @@ async function session(c: AdminContext): Promise<Response> {
   const wedding = await c.repo.wedding();
   const warnings: { level: 'info' | 'warn'; message: string }[] = [];
 
-  if (!turnstileEnabled(c.env)) {
+  if (!turnstileEnabled(c.env) && c.auth.mode !== 'demo') {
     warnings.push({
       level: 'info',
       message:

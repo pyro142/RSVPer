@@ -1,0 +1,56 @@
+/* Banner on the public demo (demo.rsvper.app). */
+.demo-banner {
+  position: relative;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 16px;
+  padding: 9px 16px;
+  background: #2b2430;
+  color: #f5efe6;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.demo-banner p {
+  margin: 0;
+}
+
+.demo-banner nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.demo-banner a {
+  color: #f5c97a;
+}
+
+.demo-banner form {
+  margin: 0;
+}
+
+.demo-banner button {
+  padding: 3px 10px;
+  border: 1px solid #f5c97a;
+  border-radius: 6px;
+  background: transparent;
+  color: #f5c97a;
+  font: inherit;
+  cursor: pointer;
+}
+
+.demo-banner a:focus-visible,
+.demo-banner button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}

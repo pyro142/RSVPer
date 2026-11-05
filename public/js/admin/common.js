@@ -330,7 +330,9 @@
     if (names) names.textContent = info.couple;
 
     var signOut = $('signOut');
-    if (signOut) {
+    // The demo has no sign-in; its banner has a Reset button instead.
+    if (signOut && info.mode === 'demo') signOut.remove();
+    if (signOut && info.mode !== 'demo') {
       if (info.mode === 'access') {
         signOut.href = '/cdn-cgi/access/logout';
       } else {

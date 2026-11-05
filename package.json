@@ -23,10 +23,12 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "wrangler types --env-interface Env src/worker-configuration.d.ts",
-    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "deploy:demo": "npm run build && wrangler d1 migrations apply DB --remote -c wrangler.demo.jsonc && wrangler deploy -c wrangler.demo.jsonc",
+    "dev:demo": "node scripts/build.mjs && wrangler d1 migrations apply DB --local -c wrangler.demo.jsonc && wrangler dev -c wrangler.demo.jsonc"
   },
   "cloudflare": {
-    "label": "RSVPer — wedding invitations and RSVPs",
+    "label": "RSVPer \u2014 wedding invitations and RSVPs",
     "products": [
       "Workers",
       "D1"

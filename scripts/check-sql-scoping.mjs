@@ -21,7 +21,9 @@ const TABLES = [
   'security_events',
 ];
 const TOUCHES = new RegExp(`\\b(FROM|INTO|UPDATE|JOIN)\\s+(${TABLES.join('|')})\\b`, 'i');
-// weddings is keyed by its own id rather than a wedding_id column.
+// weddings is keyed by its own id rather than a wedding_id column. A query that
+// deliberately spans weddings (e.g. demo sandbox clean-up) must say so with a
+// "/* tenant-admin: reason */" comment in the SQL, so it stands out in review.
 const SCOPED =
   /\bwedding_id\b|\bFROM\s+weddings\s+WHERE\s+id\s*=|\bUPDATE\s+weddings\b[\s\S]*\bWHERE\s+id\s*=/i;
 
@@ -39,7 +41,7 @@ for (const file of files('src')) {
   for (const match of source.matchAll(/(`[^`]*`|'[^'\n]*'|"[^"\n]*")/g)) {
     const text = match[0];
     if (!TOUCHES.test(text)) continue;
-    if (!SCOPED.test(text)) {
+    if (!SCOPED.test(text) && !/\/\* tenant-admin: [^*]+\*\//.test(text)) {
       const line = source.slice(0, match.index).split('\n').length;
       problems.push(
         `${relative('.', file)}:${line}: query on a per-wedding table without wedding_id`,
