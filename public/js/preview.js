@@ -172,6 +172,7 @@
     var params = new URLSearchParams();
     if (hex.test(theme.background || '')) params.set('background', theme.background);
     if (hex.test(theme.brand || '')) params.set('brand', theme.brand);
+    if (/^[a-z]{1,20}$/.test(theme.font || '')) params.set('font', theme.font);
     var id = ++themeRequest;
     // v= gives a fresh address, skipping any copy cached by an older version.
     params.set('v', '2');

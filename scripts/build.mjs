@@ -5,7 +5,7 @@
 // Runs as part of `npm run deploy` (and therefore the Deploy to Cloudflare
 // button). public/vendor/ is gitignored.
 
-import { cpSync, mkdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,23 +15,27 @@ const vendor = join(root, 'public', 'vendor');
 const copies = [
   ['node_modules/canvas-confetti/dist/confetti.browser.js', 'confetti/confetti.browser.js'],
   ['node_modules/canvas-confetti/LICENSE', 'confetti/LICENSE'],
-  ['node_modules/@fontsource/fraunces/LICENSE', 'fonts/LICENSE-Fraunces.txt'],
-  ['node_modules/@fontsource/karla/LICENSE', 'fonts/LICENSE-Karla.txt'],
   ['examples/guests.csv', 'examples/guests.csv'],
 ];
 
-// Font faces actually used by the card (both OFL-licensed). Latin and
-// Latin Extended, so accented names render in the same face.
-const FONTS = [
-  ['fraunces', 'Fraunces', 300, 'normal'],
-  ['fraunces', 'Fraunces', 500, 'normal'],
-  ['fraunces', 'Fraunces', 600, 'normal'],
-  ['fraunces', 'Fraunces', 300, 'italic'],
-  ['fraunces', 'Fraunces', 400, 'italic'],
-  ['karla', 'Karla', 400, 'normal'],
-  ['karla', 'Karla', 500, 'normal'],
-  ['karla', 'Karla', 600, 'normal'],
-  ['karla', 'Karla', 700, 'normal'],
+// Font pairings come from src/fonts.json (also read by the server). Headings
+// need light/regular/medium/semibold plus italics (for the "&"); body text
+// needs regular to bold. Only weights a family actually ships are copied, and
+// browsers only download a face when a page uses it.
+const fontConfig = JSON.parse(readFileSync(join(root, 'src', 'fonts.json'), 'utf8'));
+const HEADING = [
+  [300, 'normal'],
+  [400, 'normal'],
+  [500, 'normal'],
+  [600, 'normal'],
+  [300, 'italic'],
+  [400, 'italic'],
+];
+const BODY = [
+  [400, 'normal'],
+  [500, 'normal'],
+  [600, 'normal'],
+  [700, 'normal'],
 ];
 const SUBSETS = {
   latin:
@@ -40,14 +44,36 @@ const SUBSETS = {
     'U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF',
 };
 
+const wanted = new Map(); // family -> Set("weight style")
+for (const pair of fontConfig.pairs) {
+  for (const [family, list] of [
+    [pair.heading, HEADING],
+    [pair.body, BODY],
+  ]) {
+    if (!wanted.has(family)) wanted.set(family, new Set());
+    for (const [w, st] of list) wanted.get(family).add(`${w} ${st}`);
+  }
+}
+
 const faces = [];
-for (const [pkg, family, weight, style] of FONTS) {
-  for (const [subset, range] of Object.entries(SUBSETS)) {
-    const file = `${pkg}-${subset}-${weight}-${style}.woff2`;
-    copies.push([`node_modules/@fontsource/${pkg}/files/${file}`, `fonts/${file}`]);
-    faces.push(
-      `@font-face {\n  font-family: '${family}';\n  font-style: ${style};\n  font-display: swap;\n  font-weight: ${weight};\n  src: url('./${file}') format('woff2');\n  unicode-range: ${range};\n}`,
-    );
+for (const [family, variants] of wanted) {
+  const { pkg } = fontConfig.families[family];
+  const regular = `node_modules/@fontsource/${pkg}/files/${pkg}-latin-400-normal.woff2`;
+  if (!existsSync(join(root, regular))) {
+    console.error(`build: font "${family}" is missing (${regular}). Did you run npm install?`);
+    process.exit(1);
+  }
+  copies.push([`node_modules/@fontsource/${pkg}/LICENSE`, `fonts/LICENSE-${pkg}.txt`]);
+  for (const variant of variants) {
+    const [weight, style] = variant.split(' ');
+    for (const [subset, range] of Object.entries(SUBSETS)) {
+      const file = `${pkg}-${subset}-${weight}-${style}.woff2`;
+      if (!existsSync(join(root, 'node_modules', '@fontsource', pkg, 'files', file))) continue;
+      copies.push([`node_modules/@fontsource/${pkg}/files/${file}`, `fonts/${file}`]);
+      faces.push(
+        `@font-face {\n  font-family: '${family}';\n  font-style: ${style};\n  font-display: swap;\n  font-weight: ${weight};\n  src: url('./${file}') format('woff2');\n  unicode-range: ${range};\n}`,
+      );
+    }
   }
 }
 

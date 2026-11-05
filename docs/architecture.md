@@ -101,7 +101,13 @@ theme name is ever stored. Evening guests and the admin's dark mode keep a dark
 surface but take the brand colour. Tests check every premade theme for readable
 text and buttons.
 
-**Live preview in the setup wizard.** `/admin/preview` (admin-only, framable
+**Fonts.** Five curated pairings (heading + body) defined once in
+`src/fonts.json`, which both the build (to copy only the needed weights from
+`@fontsource`) and the server (to validate the setting and emit
+`--font-serif` / `--font-sans`) read. Stored as `theme.font` next to the two
+colours. Everything is self-hosted; browsers only download faces in use.
+
+**Live preview in the setup wizard and Settings.** `/admin/preview` (admin-only, framable
 only by the admin itself) renders the real guest card against a sample
 household, keeping its `data-slot` markers. `public/js/preview.js` applies
 unsaved values sent by the wizard via `postMessage` (same origin only, text

@@ -8,6 +8,9 @@
 // the database without passing through `validateSection`.
 
 import { cleanBlock, cleanLine } from './lib/text';
+import fonts from './fonts.json';
+
+export const FONT_PAIRS = fonts.pairs;
 
 export interface Settings {
   couple: {
@@ -99,6 +102,8 @@ export interface Settings {
   theme: {
     background: string | null;
     brand: string | null;
+    /** A font pairing id from src/fonts.json. */
+    font: string;
   };
 }
 
@@ -157,7 +162,7 @@ export const DEFAULTS: Settings = {
     submits_per_hour: 5,
   },
   features: { meals: false, dietary: false, song_request: false, message: false },
-  theme: { background: null, brand: null },
+  theme: { background: null, brand: null, font: 'classic' },
 };
 
 export const SECTIONS = Object.keys(DEFAULTS) as SectionName[];
@@ -382,10 +387,13 @@ const VALIDATORS: { [K in SectionName]: (raw: Raw) => Settings[K] } = {
       submits_per_hour: int(r, 'submits_per_hour', 2, 60),
     };
   },
-  theme: (r) => ({
-    background: hexColour(r, 'background'),
-    brand: hexColour(r, 'brand'),
-  }),
+  theme: (r) => {
+    const font = r.font === undefined || r.font === null || r.font === '' ? 'classic' : r.font;
+    if (typeof font !== 'string' || !FONT_PAIRS.some((p) => p.id === font)) {
+      throw new SettingsError('font', 'Unknown font pairing.');
+    }
+    return { background: hexColour(r, 'background'), brand: hexColour(r, 'brand'), font };
+  },
   features: (r) => ({
     meals: bool(r, 'meals'),
     dietary: bool(r, 'dietary'),

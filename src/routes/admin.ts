@@ -26,6 +26,7 @@ import { hit, peek } from '../lib/ratelimit';
 import { cleanBlock, cleanLine } from '../lib/text';
 import { TURNSTILE_KEY, turnstileEnabled } from '../lib/turnstile';
 import {
+  FONT_PAIRS,
   SECTIONS,
   SettingsError,
   coupleNames,
@@ -290,6 +291,7 @@ async function getSettings(c: AdminContext): Promise<Response> {
     settings: c.settings,
     meta: {
       auth_mode: c.auth.mode,
+      font_pairs: FONT_PAIRS,
       turnstile_configured: turnstileEnabled(c.env),
       setup_complete: Boolean((await c.repo.wedding())?.setup_completed_at),
     },

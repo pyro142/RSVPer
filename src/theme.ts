@@ -10,11 +10,27 @@
 // button text be white or near-black?) are made here, server-side, so no
 // colour maths ships to guests' browsers.
 
+import fonts from './fonts.json';
+
 export const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export interface ThemeColours {
   background: string | null;
   brand: string | null;
+  /** Font pairing id (src/fonts.json); 'classic' or missing = RSVPer's own. */
+  font?: string | null;
+}
+
+type FontFamilies = Record<string, { pkg: string; fallback: string }>;
+
+/** Font tokens for a pairing, or '' for the default / unknown ids. */
+export function fontCss(id: string | null | undefined): string {
+  if (!id || id === 'classic') return '';
+  const pair = fonts.pairs.find((p) => p.id === id);
+  if (!pair) return '';
+  const families = fonts.families as FontFamilies;
+  const stack = (name: string) => `'${name}', ${families[name]!.fallback}`;
+  return `:root { --font-serif: ${stack(pair.heading)}; --font-sans: ${stack(pair.body)}; }`;
 }
 
 /** RSVPer's own palette ("the template"), from public/css/tokens.css. */
@@ -193,6 +209,12 @@ const LIGHT_EXTRAS = [
  * a <style> element.
  */
 export function themeCss(theme: ThemeColours): string {
+  const font = fontCss(theme.font);
+  const colours = colourCss(theme);
+  return [colours, font].filter(Boolean).join('\n');
+}
+
+function colourCss(theme: ThemeColours): string {
   const background = validHex(theme.background);
   const brand = validHex(theme.brand);
   if (!background && !brand) return '';

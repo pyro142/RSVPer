@@ -102,10 +102,12 @@
     var state = {
       background: valid(opts.value && opts.value.background),
       brand: valid(opts.value && opts.value.brand),
+      font: (opts.value && opts.value.font) || 'classic',
     };
+    var fontPairs = opts.fontPairs || [];
 
     var root = el('div', 'colours');
-    if (!opts.hideTitle) root.appendChild(el('h2', 'section-title', 'Colours'));
+    if (!opts.hideTitle) root.appendChild(el('h2', 'section-title', 'Colours and fonts'));
     root.appendChild(
       el(
         'p',
@@ -189,6 +191,35 @@
     brandBlock.appendChild(hint);
     root.appendChild(brandBlock);
 
+    // 4. Fonts ---------------------------------------------------------------
+    var fontButtons = [];
+    if (fontPairs.length) {
+      var fontBlock = el('section', 'colour-block');
+      fontBlock.appendChild(el('h3', 'colour-heading', 'Fonts'));
+      var grid = el('div', 'font-grid');
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', 'Font pairings');
+      fontPairs.forEach(function (pair) {
+        var b = el('button', 'font-card');
+        b.type = 'button';
+        b.setAttribute('aria-label', pair.label + ' fonts: ' + pair.heading + ' and ' + pair.body);
+        var heading = el('span', 'font-sample-heading', 'Alex & Sam');
+        heading.style.fontFamily = "'" + pair.heading + "', serif";
+        var body = el('span', 'font-sample-body', 'We’d love you to join us');
+        body.style.fontFamily = "'" + pair.body + "', sans-serif";
+        b.appendChild(heading);
+        b.appendChild(body);
+        b.appendChild(el('span', 'font-name', pair.label));
+        b.addEventListener('click', function () {
+          set({ font: pair.id });
+        });
+        fontButtons.push({ button: b, id: pair.id });
+        grid.appendChild(b);
+      });
+      fontBlock.appendChild(grid);
+      root.appendChild(fontBlock);
+    }
+
     var status = el('p', 'field-hint colour-status');
     status.setAttribute('aria-live', 'polite');
     root.appendChild(status);
@@ -236,6 +267,11 @@
       brandPicker.text.placeholder = TEMPLATE.brand + ' (default)';
       reset.hidden = !state.background;
 
+      fontButtons.forEach(function (f) {
+        var on = f.id === state.font;
+        f.button.classList.toggle('selected', on);
+        f.button.setAttribute('aria-pressed', String(on));
+      });
       themeButtons.forEach(function (t) {
         var on = same(t.background, state.background) && same(t.brand, state.brand);
         t.button.classList.toggle('selected', on);
@@ -281,13 +317,19 @@
         state.background = change.background === '' ? null : valid(change.background);
         pendingSave.background = change.background === '' ? '' : state.background;
       }
+      if (change.font !== undefined) {
+        state.font = change.font;
+        pendingSave.font = change.font;
+      }
       if (change.brand !== undefined) {
         state.brand = change.brand === '' ? null : valid(change.brand);
         pendingSave.brand = change.brand === '' ? '' : state.brand;
       }
       paint();
       applyToPage(state);
-      if (opts.onChange) opts.onChange({ background: state.background, brand: state.brand });
+      if (opts.onChange) {
+        opts.onChange({ background: state.background, brand: state.brand, font: state.font });
+      }
       clearTimeout(saveTimer);
       saveTimer = setTimeout(save, setOpts && setOpts.debounce ? 500 : 0);
     }
@@ -305,6 +347,7 @@
     var params = new URLSearchParams();
     if (colours.background) params.set('background', colours.background);
     if (colours.brand) params.set('brand', colours.brand);
+    if (colours.font) params.set('font', colours.font);
     var id = ++pageRequest;
     // v= gives a fresh address, skipping any copy cached by an older version.
     params.set('v', '2');

@@ -473,17 +473,22 @@
     form.noValidate = true;
     form.dataset.section = section;
 
-    if (!opts.hideTitle) form.appendChild(el('h2', 'section-title', spec.title));
-    if (spec.help) form.appendChild(el('p', 'section-help', spec.help));
+    if (!opts.hideTitle) form.appendChild(el('h2', 'section-title', opts.title || spec.title));
+    var help = opts.help !== undefined ? opts.help : spec.help;
+    if (help) form.appendChild(el('p', 'section-help', help));
 
-    var controls = spec.fields.map(function (field) {
+    // opts.fields: show only these keys (others keep their saved values).
+    var fieldSpecs = spec.fields.filter(function (field) {
+      return !opts.fields || opts.fields.indexOf(field.key) !== -1;
+    });
+    var controls = fieldSpecs.map(function (field) {
       var control = renderField(field, value ? value[field.key] : undefined);
       form.appendChild(control.node);
       return control;
     });
 
     function payload() {
-      var out = {};
+      var out = Object.assign({}, opts.extra || {});
       controls.forEach(function (c) {
         out[c.key] = c.get();
       });
@@ -504,7 +509,7 @@
       form.addEventListener('change', notify);
     }
 
-    spec.fields.forEach(function (field) {
+    fieldSpecs.forEach(function (field) {
       if (field.mapHelp) mapHelp(control(field.key), control('name'), control('address'));
     });
 
@@ -527,7 +532,7 @@
     /** Save this section. Resolves true on success, false on a shown error. */
     function save() {
       error.hidden = true;
-      var payload = {};
+      var payload = Object.assign({}, opts.extra || {});
       controls.forEach(function (c) {
         payload[c.key] = c.get();
       });

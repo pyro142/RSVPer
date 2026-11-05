@@ -2,7 +2,8 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import coloursJs from '../public/js/admin/colours.js?raw';
-import { contrast, isDark, oklabDistance, onAccent, themeCss } from '../src/theme';
+import { contrast, fontCss, isDark, oklabDistance, onAccent, themeCss } from '../src/theme';
+import fonts from '../src/fonts.json';
 import { BASE, fetchWorker, markReady } from './helpers';
 
 const premade = [...coloursJs.matchAll(/\['([^']+)', '(#[0-9A-F]{6})', '(#[0-9A-F]{6})'\]/g)].map(
@@ -164,5 +165,41 @@ describe('storing colours', () => {
     expect(await ok.text()).toContain('--rose: #E0A526');
     const bad = await admin('/admin/theme.css?brand=%3C%2Fstyle%3E');
     expect(await bad.text()).toBe('');
+  });
+});
+
+describe('fonts', () => {
+  it('every pairing names families that exist, with fallbacks', () => {
+    const families = fonts.families as Record<string, { pkg: string; fallback: string }>;
+    for (const pair of fonts.pairs) {
+      expect(families[pair.heading], pair.id).toBeTruthy();
+      expect(families[pair.body], pair.id).toBeTruthy();
+    }
+  });
+
+  it('classic (the default) adds no CSS; others set both font tokens', () => {
+    expect(fontCss('classic')).toBe('');
+    expect(fontCss(undefined)).toBe('');
+    const css = fontCss('romantic');
+    expect(css).toContain("--font-serif: 'Cormorant Garamond'");
+    expect(css).toContain("--font-sans: 'Montserrat'");
+  });
+
+  it('ignores unknown or hostile ids', () => {
+    expect(fontCss('nope')).toBe('');
+    expect(fontCss("'; } body { display: none")).toBe('');
+  });
+
+  it('is stored with the colours, validated, and applied to the card', async () => {
+    const admin = await adminSession();
+    expect((await admin('/api/admin/settings/theme', 'PUT', { font: 'comic' })).status).toBe(400);
+    await admin('/api/admin/settings/theme', 'PUT', { brand: '#1F2D3A' });
+    const res = await admin('/api/admin/settings/theme', 'PUT', { font: 'modern' });
+    // Changing the font keeps the colours.
+    expect(await res.json()).toMatchObject({ value: { brand: '#1F2D3A', font: 'modern' } });
+    await markReady();
+    expect(await (await fetchWorker('/')).text()).toContain("--font-sans: 'Inter'");
+    const preview = await admin('/admin/theme.css?font=timeless');
+    expect(await preview.text()).toContain("'Playfair Display'");
   });
 });

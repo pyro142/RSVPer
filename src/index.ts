@@ -193,6 +193,7 @@ async function routeAdmin(
     const css = themeCss({
       background: validHex(url.searchParams.get('background')),
       brand: validHex(url.searchParams.get('brand')),
+      font: url.searchParams.get('font'),
     });
     return new Response(css, {
       headers: {

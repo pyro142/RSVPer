@@ -36,6 +36,34 @@
       <div class="settings-panels" id="settingsPanels">
         <p class="table-status">Loading…</p>
       </div>
+
+      <aside class="live-preview" aria-label="Live preview of your invitation">
+        <div class="preview-head">
+          <span class="preview-title">Live preview</span>
+          <div class="preview-toggle" role="group" aria-label="Preview as">
+            <button type="button" class="active" data-preview-as="day">Day guest</button>
+            <button type="button" data-preview-as="evening" id="previewEveningBtn">
+              Evening guest
+            </button>
+          </div>
+        </div>
+        <div class="phone-frame">
+          <iframe
+            id="previewFrame"
+            src="/admin/preview"
+            title="Preview of your invitation as a guest would see it"
+          ></iframe>
+        </div>
+        <p class="field-hint">Shows unsaved changes too. Nothing here is saved or sent.</p>
+      </aside>
+      <button
+        type="button"
+        class="btn btn-primary preview-fab"
+        id="previewToggle"
+        aria-expanded="false"
+      >
+        Preview
+      </button>
     </main>
 
     <script src="/js/admin/common.js"></script>
@@ -43,6 +71,7 @@
     <script src="/js/admin/menu.js"></script>
     <script src="/js/admin/turnstile.js"></script>
     <script src="/js/admin/colours.js"></script>
+    <script src="/js/admin/preview-pane.js"></script>
     <script src="/js/admin/settings.js"></script>
   </body>
 </html>

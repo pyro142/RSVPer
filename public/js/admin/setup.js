@@ -11,92 +11,61 @@
   var stepsList = document.getElementById('wizardSteps');
   var panel = document.getElementById('wizardPanel');
 
+  // Just the essentials. Everything else (options, menu, pictures, deadline,
+  // wording, bot protection…) lives in Settings and is suggested at the end.
   var STEPS = [
-    { id: 'couple', title: 'Names', sections: ['couple'] },
-    { id: 'colours', title: 'Colours', custom: coloursStep },
-    { id: 'event', title: 'Date', sections: ['event'] },
-    { id: 'venue', title: 'Venue & replies', sections: ['venue', 'rsvp'] },
-    { id: 'features', title: 'Options', sections: ['evening', 'features'], menu: true },
-    { id: 'images', title: 'Pictures', sections: ['images'] },
+    {
+      id: 'wedding',
+      title: 'Your wedding',
+      forms: [
+        { section: 'couple', title: 'Your names', fields: ['name_one', 'name_two'], help: '' },
+        {
+          section: 'event',
+          title: 'When',
+          fields: ['date', 'ceremony_time'],
+          help: '',
+          // Time zone and date format come from this browser on first setup.
+          extra: function () {
+            return settings.event.timezone === 'UTC' ? browserDefaults() : {};
+          },
+        },
+        { section: 'venue', title: 'Where', fields: ['name', 'address'], help: '' },
+      ],
+    },
+    { id: 'look', title: 'Look', custom: coloursStep },
     { id: 'guests', title: 'Guests', custom: guestsStep },
-    { id: 'protection', title: 'Bot protection', custom: protectionStep },
     { id: 'finish', title: 'Finish', custom: finishStep },
   ];
+
+  function browserDefaults() {
+    var out = {};
+    try {
+      out.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch {
+      out.timezone = 'UTC';
+    }
+    var lang = navigator.language || 'en-GB';
+    out.locale = /^en(-|$)/i.test(lang) && lang.indexOf('-') === -1 ? 'en-GB' : lang;
+    return out;
+  }
 
   var settings = null;
   var meta = null;
   var current = 0;
   var done = {};
 
-  // ---------------------------------------------------------------------
-  // Live preview (desktop): the real guest card in an iframe, fed unsaved
-  // values as the couple types. Same origin only; nothing is saved by it.
-  // ---------------------------------------------------------------------
-  var frame = document.getElementById('previewFrame');
-  var previewReady = false;
-  var pending = { sections: {} };
-  var drafts = {};
-
-  function flushPreview() {
-    if (!previewReady || !frame || !frame.contentWindow) return;
-    pending.type = 'rsvper-preview';
-    frame.contentWindow.postMessage(pending, window.location.origin);
-    pending = { sections: {} };
-  }
-
-  var previewTimer = null;
-  function sendPreview(update) {
-    if (update.sections) Object.assign(pending.sections, update.sections);
-    if (update.menu) pending.menu = update.menu;
-    if (update.evening !== undefined) pending.evening = update.evening;
-    if (update.theme) pending.theme = update.theme;
-    clearTimeout(previewTimer);
-    previewTimer = setTimeout(flushPreview, 120);
-  }
-
-  window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin) return;
-    if (!frame || event.source !== frame.contentWindow) return;
-    if (event.data && event.data.type === 'rsvper-preview-ready') {
-      previewReady = true;
-      flushPreview();
-    }
+  // Live preview of the guest card (see preview-pane.js).
+  var pane = R.previewPane({
+    settings: function () {
+      return settings;
+    },
   });
-
-  var eveningBtn = document.getElementById('previewEveningBtn');
-  [].forEach.call(document.querySelectorAll('[data-preview-as]'), function (button) {
-    button.addEventListener('click', function () {
-      [].forEach.call(document.querySelectorAll('[data-preview-as]'), function (b) {
-        b.classList.toggle('active', b === button);
-        b.setAttribute('aria-pressed', String(b === button));
-      });
-      sendPreview({ evening: button.dataset.previewAs === 'evening' });
-    });
-  });
-
-  function eveningEnabled() {
-    var ev = drafts.evening || (settings && settings.evening) || {};
-    return !!ev.enabled;
-  }
-
-  function refreshEveningToggle() {
-    if (!eveningBtn) return;
-    eveningBtn.disabled = !eveningEnabled();
-    if (eveningBtn.disabled && eveningBtn.classList.contains('active')) {
-      document.querySelector('[data-preview-as="day"]').click();
-    }
-  }
+  var sendPreview = pane.send;
+  var refreshEveningToggle = pane.refreshEveningToggle;
+  var weddingDate = pane.weddingDate;
 
   function onDraft(section, payload) {
-    drafts[section] = payload;
-    var update = {};
-    update[section] = payload;
-    sendPreview({ sections: update });
-    if (section === 'evening') refreshEveningToggle();
-  }
-
-  function weddingDate() {
-    return (drafts.event && drafts.event.date) || (settings && settings.event.date) || null;
+    pane.onDraft(section, payload);
   }
 
   function renderSteps() {
@@ -143,14 +112,18 @@
 
   /** One or more settings forms; "Continue" saves them all, in order. */
   function sectionStep(step) {
-    var forms = step.sections.map(function (section) {
-      return R.renderSection(panel, section, settings[section], {
+    var forms = step.forms.map(function (f) {
+      return R.renderSection(panel, f.section, settings[f.section], {
         quiet: true,
+        title: f.title,
+        help: f.help,
+        fields: f.fields,
+        extra: f.extra ? f.extra() : null,
         onChange: onDraft,
         weddingDate: weddingDate,
         onSaved: function (value) {
-          settings[section] = value;
-          delete drafts[section];
+          settings[f.section] = value;
+          pane.saved(f.section);
         },
       });
     });
@@ -158,22 +131,6 @@
     forms.forEach(function (f) {
       f.querySelector('.form-actions').hidden = true;
     });
-    if (step.menu) {
-      var menuBox = el('div', 'wizard-menu');
-      menuBox.appendChild(
-        el(
-          'p',
-          'field-hint',
-          'Only needed if you turned on meal choices. Save the menu before continuing.',
-        ),
-      );
-      R.renderMenuEditor(menuBox, {
-        onChange: function (menu) {
-          sendPreview({ menu: menu });
-        },
-      });
-      panel.appendChild(menuBox);
-    }
 
     var actions = el('div', 'form-actions wizard-actions');
     actions.appendChild(backButton());
@@ -184,7 +141,12 @@
 
     next.addEventListener('click', function () {
       next.disabled = true;
-      saveForms(forms, step.sections)
+      saveForms(
+        forms,
+        step.forms.map(function (f) {
+          return f.section;
+        }),
+      )
         .then(function (ok) {
           if (ok) {
             done[step.id] = true;
@@ -323,6 +285,7 @@
   function coloursStep(container) {
     R.renderColours(container, {
       value: settings.theme,
+      fontPairs: meta.font_pairs,
       onChange: function (colours) {
         sendPreview({ theme: colours });
       },
@@ -342,30 +305,6 @@
     container.appendChild(actions);
   }
 
-  function protectionStep(container) {
-    // "Skip for now" until keys are saved; then it's a normal Continue.
-    var next = el('button', 'btn btn-ghost', 'Skip for now');
-    next.type = 'button';
-    next.addEventListener('click', function () {
-      done.protection = true;
-      go(current + 1);
-    });
-    R.renderTurnstile(container, {
-      onState: function (state) {
-        var on = Boolean(state.source);
-        meta.turnstile_configured = on;
-        next.textContent = on ? 'Continue' : 'Skip for now';
-        next.className = on ? 'btn btn-primary' : 'btn btn-ghost';
-      },
-    });
-    var actions = el('div', 'form-actions wizard-actions');
-    actions.appendChild(backButton());
-    var skip = el('p', 'field-hint', 'Optional. You can skip this and add it later in Settings.');
-    container.appendChild(skip);
-    actions.appendChild(next);
-    container.appendChild(actions);
-  }
-
   function finishStep(container) {
     container.appendChild(el('h2', 'section-title', 'Ready to open your invitation?'));
     container.appendChild(
@@ -375,15 +314,29 @@
         'Finishing makes the invitation live: guests with a code can reply. You can keep changing settings and adding guests afterwards.',
       ),
     );
-    if (!meta.turnstile_configured) {
-      container.appendChild(
-        el(
-          'p',
-          'banner banner-info',
-          'Bot protection is off. That’s fine to start with; you can turn it on any time in Settings → Bot protection.',
-        ),
-      );
-    }
+    container.appendChild(el('h3', 'colour-heading', 'Optional extras, any time in Settings'));
+    var list = el('ul', 'extras-list');
+    [
+      ['evening', 'Evening guests', 'on by default; add your reception time'],
+      ['features', 'Optional questions', 'meal choices, dietary needs, song requests, messages'],
+      ['rsvp', 'RSVP deadline and contact line', ''],
+      ['venue', 'Map link for your venue', ''],
+      ['images', 'Pictures', 'your own photo instead of the built-in art'],
+      ['copy', 'Wording', 'every sentence guests see'],
+      [
+        'protection',
+        'Bot protection',
+        meta.turnstile_configured ? 'already on' : 'free and recommended',
+      ],
+    ].forEach(function (item) {
+      var li = el('li');
+      var link = el('a', null, item[1]);
+      link.href = '/admin/settings#' + item[0];
+      li.appendChild(link);
+      if (item[2]) li.appendChild(el('span', 'field-hint', ' — ' + item[2]));
+      list.appendChild(li);
+    });
+    container.appendChild(list);
     var preview = el('a', 'btn btn-ghost', 'Preview the invitation');
     preview.href = '/';
     preview.target = '_blank';
