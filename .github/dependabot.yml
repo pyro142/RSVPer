@@ -11,3 +11,9 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # typescript-eslint only supports TypeScript < 6.1. Allow minor/patch
+      # updates, but hold back new TypeScript majors until typescript-eslint
+      # adds support; then remove this rule.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
