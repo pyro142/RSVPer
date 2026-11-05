@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220" width="800" height="220" role="img">
-  <!-- RSVPer default hero art (MIT, part of this project). Replace it in
+  <!-- RSVPer default hero art (part of RSVPer, same licence as the project). Replace it in
        Admin → Settings → Images with your own photo. -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">

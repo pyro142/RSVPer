@@ -189,4 +189,17 @@ in total.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE).
+RSVPer is **source-available** under the
+[PolyForm Noncommercial License 1.0.0](LICENSE).
+
+- **You can** use it, deploy it for your own (or a friend's) wedding, change it,
+  and share it, for any non-commercial purpose.
+- **You can't** sell it, sell access to it, or run it as a paid or commercial
+  service.
+
+Because it doesn't allow commercial use, this isn't "open source" in the OSI
+sense. If you'd like to use it commercially, open an issue to ask.
+
+Third-party parts keep their own licences: the Fraunces and Karla fonts (SIL Open
+Font License) and canvas-confetti (ISC). Their licence files are copied into
+`public/vendor/` when you build.

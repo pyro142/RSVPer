@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "A self-hostable wedding invite and RSVP app for Cloudflare Workers + D1.",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/pyro142/RSVPer"
