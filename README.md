@@ -33,6 +33,27 @@ wording, the guest list, and the replies.
 - **Secure by default**: brute-force protection on codes, signed admin sessions,
   CSRF protection, optional Cloudflare Turnstile and Cloudflare Access.
 
+## Screenshots
+
+All screenshots use made-up data from `npm run db:seed:local`.
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/guest-code.png" alt="The invitation card asking for an invite code"></td>
+    <td width="33%"><img src="docs/screenshots/guest-reply.png" alt="A household replying, with a plus one, meal choices and a song request"></td>
+    <td width="33%"><img src="docs/screenshots/guest-evening.png" alt="The evening version of the card for a reception-only guest"></td>
+  </tr>
+  <tr>
+    <td>Guests enter their code (or use their personal link)</td>
+    <td>Replying: who's coming, plus ones, meals, song request</td>
+    <td>Evening guests get their own time and look</td>
+  </tr>
+</table>
+
+![The admin dashboard with reply counts, meal totals and the invite list](docs/screenshots/admin-dashboard.png)
+
+![The setup wizard on the date and time step](docs/screenshots/admin-setup.png)
+
 ## Deploy
 
 ### With the button (recommended)
@@ -143,6 +164,8 @@ RSVPer verifies the Access token's signature on every admin request, so the
 
 ## Local development
 
+Want to help improve RSVPer? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```bash
 npm install
 cp .dev.vars.example .dev.vars   # then fill in both values
@@ -186,6 +209,57 @@ in total.
 - Guest IP addresses are never stored. A keyed hash is kept for rate limiting.
 - Your data lives in your own Cloudflare account. Exports are CSV downloads to
   your device.
+
+## FAQ and troubleshooting
+
+**Can guests change their reply?**
+No, by design: one reply per household. If someone needs to change theirs, open
+their household in the dashboard and choose **Reset reply**. Their link keeps
+working and they can reply again.
+
+**A code has been shared with the wrong people.**
+Open the household, choose **New code**, and send them the new link. The old code
+stops working immediately.
+
+**Someone says their code doesn't work.**
+Codes never contain 0, O, 1, I or L, so check for those. Too many wrong attempts
+from one connection trigger a cool-off (and a 24-hour lockout after many); the
+guest sees "Too many attempts". You can loosen the limits in **Settings →
+Advanced: security**, or just send them their personal link.
+
+**The admin says "Setup problem" or "isn't set up yet".**
+A deploy secret is missing or too short. In the Cloudflare dashboard open your
+Worker → **Settings → Variables and secrets**, and set `ADMIN_PASSWORD` (12+
+characters) and `SESSION_SECRET` (32+ characters).
+
+**I forgot the admin password.**
+If you changed it in Settings, the stored password wins. To reset it, delete the
+`admin_credentials` row in your D1 database (Cloudflare dashboard → D1 → your
+database → Console: `DELETE FROM admin_credentials;`), then sign in with the
+`ADMIN_PASSWORD` secret, which you can also change in the dashboard.
+
+**The deploy failed at the migrations step.**
+Check that `wrangler.jsonc` has your real `database_id` (the button sets it for
+you; for manual deploys run `npx wrangler d1 create rsvper`) and that the
+database binding is still called `DB`.
+
+**Guests see "This invitation isn't ready yet".**
+Finish the setup wizard at `/admin/setup`.
+
+**Can I use my own photo?**
+Yes: in **Settings → Images**, link to an image you host or upload one (PNG, JPEG
+or WebP, up to 1 MB).
+
+**Can I show the RSVP form inside my existing wedding website?**
+Yes. Add your website's address under **Settings → Privacy → Allow embedding on
+these sites**, then embed your RSVPer address in an `<iframe>`.
+
+**Does it send emails?**
+No. Share each household's link however you like; **Export links** gives you a
+CSV for mail merge.
+
+**Do I need a paid Cloudflare plan?**
+No. Everything runs on the free plan.
 
 ## Licence
 

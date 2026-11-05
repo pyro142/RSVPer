@@ -14,19 +14,22 @@ Browser ──► Worker (src/index.ts)
 
 ## Layout
 
-| Path                | What it is                                                                       |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `src/index.ts`      | Router, error boundary, security headers, the admin gate                         |
-| `src/tenant.ts`     | Decides which wedding a request belongs to (always `default` today)              |
-| `src/settings.ts`   | Every setting: shape, defaults, validation, display helpers                      |
-| `src/db/repo.ts`    | Guest-side data access (`WeddingRepo`)                                           |
-| `src/db/admin.ts`   | Admin data access (`AdminRepo extends WeddingRepo`)                              |
-| `src/auth/`         | Password sessions, Cloudflare Access JWT verification, the gate and CSRF checks  |
-| `src/routes/`       | Request handlers: guest card, guest API, admin API                               |
-| `src/lib/`          | Codes, CSV, import, rate limiting, brute-force guard, Turnstile, text sanitising |
-| `migrations/`       | D1 schema, applied by `wrangler d1 migrations apply`                             |
-| `public/`           | Guest card template, admin pages, CSS, browser JS, default artwork               |
-| `scripts/build.mjs` | Copies self-hosted fonts, confetti and the example CSV into `public/vendor/`     |
+| Path                            | What it is                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `src/index.ts`                  | Router, error boundary, security headers, the admin gate                        |
+| `src/tenant.ts`                 | Decides which wedding a request belongs to (always `default` today)             |
+| `src/settings.ts`               | Every setting: shape, defaults, validation, display helpers                     |
+| `src/db/repo.ts`                | Guest-side data access (`WeddingRepo`)                                          |
+| `src/db/admin.ts`               | Admin data access (`AdminRepo extends WeddingRepo`)                             |
+| `src/auth/`                     | Password sessions, Cloudflare Access JWT verification, the gate and CSRF checks |
+| `src/routes/`                   | Request handlers: guest card, guest API, admin API                              |
+| `src/lib/`                      | Codes, CSV, import, menu, rate limiting, brute-force guard, Turnstile, text     |
+| `migrations/`                   | D1 schema, applied by `wrangler d1 migrations apply`                            |
+| `public/`                       | Guest card template, admin pages, CSS, browser JS, default artwork              |
+| `scripts/build.mjs`             | Copies self-hosted fonts, confetti and the example CSV into `public/vendor/`    |
+| `scripts/seed-local.mjs`        | Fills the local database with fake demo households (local only)                 |
+| `scripts/check-sql-scoping.mjs` | Lint step: fails if a query on a per-wedding table lacks `wedding_id`           |
+| `test/`                         | Vitest in the Workers runtime against a fresh local D1 per test                 |
 
 ## Key decisions
 
@@ -66,6 +69,28 @@ bytes, not the declared type); SVG is refused because it can carry script.
 This keeps the deploy button working with nothing else to provision. R2 would
 be a sensible optional upgrade for larger galleries.
 
+**Meal choices are data, and replies are never broken by menu edits.**
+Courses and options live in `meal_courses` / `meal_options`; each person's
+choice is a row in `rsvp_guest_meals` (one per course). Removing an option that
+someone already chose _retires_ it (`is_active = 0`) so exports still name it;
+a course with choices can't be removed.
+
+**Turnstile keys can come from two places.** Deploy-time secrets
+(`TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`) win. Otherwise keys saved from
+the admin are read from a settings row (`_turnstile`) that is not a settings
+section, so it is never returned by the settings API or sent to a browser.
+`withStoredTurnstile()` merges them into the environment once per request, so
+the rest of the code only ever reads `env`.
+
+**Deploying.** `npm run deploy` builds, applies D1 migrations to the remote
+database (by binding name, as the Deploy to Cloudflare button requires) and only
+then deploys. A failed migration stops the deploy. `wrangler.jsonc` carries an
+all-zero placeholder `database_id` that the deploy button replaces.
+
+**CI.** GitHub Actions runs install, build, lint (including the SQL scoping
+check), typecheck, tests, a production dependency audit and a bundle dry run on
+every push and pull request to `main`.
+
 ## Multi-tenancy (not built, but not blocked)
 
 Today there is exactly one wedding, `default`. The groundwork for hosting
@@ -79,7 +104,8 @@ many couples on one deployment is already in place:
    `AdminRepo` take a `weddingId` in their constructor and include it in every
    `WHERE` clause and `INSERT`. Handlers never write SQL for guest data.
    `test/tenancy.test.ts` checks that one wedding can't read, change or delete
-   another's data.
+   another's data, and `scripts/check-sql-scoping.mjs` fails the build if any
+   query on a per-wedding table forgets `wedding_id`.
 3. **Wedding resolution is in one function.** `resolveWeddingId()` in
    `src/tenant.ts` is the only place that decides which wedding a request is
    for.
