@@ -20,10 +20,14 @@
           <span class="brand-sub">RSVP admin</span>
         </div>
         <nav class="topbar-actions" aria-label="Admin">
-          <a class="btn btn-ghost" href="/api/admin/links.csv" download>Export links</a>
-          <a class="btn btn-ghost" href="/api/admin/export.csv" download>Export replies</a>
-          <a class="btn btn-ghost" href="/admin/settings">Settings</a>
-          <a class="btn btn-ghost" href="/admin/login" id="signOut">Sign out</a>
+          <a class="nav-link" href="/admin" aria-current="page">Dashboard</a>
+          <a class="nav-link" href="/admin/settings">Settings</a>
+          <a class="nav-link" href="/" target="_blank" rel="noopener"
+            ><span class="nav-long">View invitation</span
+            ><span class="nav-short">Invitation</span></a
+          >
+          <span class="nav-sep" aria-hidden="true"></span>
+          <a class="nav-link" href="/admin/login" id="signOut">Sign out</a>
           <button type="button" class="theme-btn" id="themeToggle" aria-pressed="false">
             <span class="sr-only" id="themeToggleLabel">Switch to dark mode</span>
           </button>
@@ -143,6 +147,8 @@
           </select>
         </div>
         <div class="toolbar-right">
+          <a class="btn btn-ghost" href="/api/admin/links.csv" download>Export links</a>
+          <a class="btn btn-ghost" href="/api/admin/export.csv" download>Export replies</a>
           <button type="button" class="btn btn-ghost" id="bulkBtn">Import CSV</button>
           <button type="button" class="btn btn-primary" id="addBtn">Add invite</button>
         </div>

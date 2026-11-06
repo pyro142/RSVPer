@@ -104,9 +104,37 @@
   --toast-shadow: 0 12px 30px -10px rgba(74, 56, 48, 0.5);
 
   /* --- geometry --------------------------------------------------------- */
+  /* Corners: small controls → controls → panels → dialogs → the card. */
+  --radius-sm: 7px;
   --radius: 9px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-card: 26px;
+  --radius-pill: 999px;
   --tap: 44px;
+
+  /* --- type scale ------------------------------------------------------- */
+  /* Every font-size in admin.css comes from here. 11px is the floor: small
+     capitals below it stop being readable on a phone. */
+  --text-2xs: 11px; /* small capitals: eyebrows, table headers */
+  --text-xs: 12px; /* meta, hints */
+  --text-sm: 13px; /* secondary text, labels, small buttons */
+  --text-base: 14px; /* body */
+  --text-md: 15px;
+  --text-lg: 20px; /* brand, dialog titles */
+  --text-xl: 22px; /* section titles */
+  --text-2xl: 28px; /* page titles, big numbers */
+  --caps-tracking: 0.1em; /* letter-spacing for every small-capitals label */
+
+  /* --- spacing ---------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
 }
 
 /* ==========================================================================

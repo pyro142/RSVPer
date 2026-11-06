@@ -149,7 +149,7 @@ body {
   width: 100%;
   aspect-ratio: 800 / 220;
   max-height: clamp(60px, 11dvh, 108px);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--photo-shadow);
 }
@@ -235,7 +235,7 @@ body {
 
 .field label {
   display: block;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-soft);
@@ -374,7 +374,7 @@ body {
 }
 
 .scope-choice legend {
-  font-size: 9px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-soft);
@@ -421,7 +421,7 @@ body {
 }
 
 .guest-list legend {
-  font-size: 9px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-soft);
@@ -504,7 +504,7 @@ body {
 }
 
 .guest-name {
-  font-size: 14.5px;
+  font-size: var(--text-md);
   font-weight: 500;
   color: var(--ink);
   line-height: 1.3;
@@ -532,7 +532,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.03em;
   line-height: 1;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
 }
 
 /* Plus-one sub-row, revealed only when its guest is coming */
@@ -556,7 +556,7 @@ body {
 }
 
 .plus-one-ask .ask-label {
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   font-weight: 600;
 }
@@ -577,7 +577,7 @@ body {
   justify-content: center;
   padding: 4px 12px;
   border: 1px solid var(--rose);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   color: var(--rose);
   background: transparent;
   font-family: var(--font-sans);
@@ -631,7 +631,7 @@ body {
 }
 
 .form-error {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--error-ink);
   background: var(--error-bg);
@@ -738,7 +738,7 @@ body {
 }
 
 .confirm-foot {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   line-height: 1.5;
   color: var(--ink-soft);
   opacity: 0.8;
@@ -887,4 +887,10 @@ body {
 .meal-field select:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
+}
+
+/* Headings that receive focus from script (so screen readers announce a new
+   step) shouldn't draw a focus box: nobody tabbed to them. */
+[tabindex='-1']:focus {
+  outline: none;
 }
