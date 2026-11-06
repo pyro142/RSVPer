@@ -26,8 +26,14 @@
     });
     [].forEach.call(nav.children, function (a) {
       a.classList.toggle('active', a.dataset.panel === id);
-      if (a.dataset.panel === id) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
+      if (a.dataset.panel === id) {
+        a.setAttribute('aria-current', 'page');
+        // On phones the menu is one sideways-scrolling row: keep the
+        // chosen section in view.
+        if (nav.scrollWidth > nav.clientWidth) {
+          nav.scrollLeft = a.offsetLeft - (nav.clientWidth - a.offsetWidth) / 2;
+        }
+      } else a.removeAttribute('aria-current');
     });
     try {
       history.replaceState(null, '', '#' + id);

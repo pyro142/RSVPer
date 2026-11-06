@@ -20,9 +20,14 @@
           <span class="brand-sub">Settings</span>
         </div>
         <nav class="topbar-actions" aria-label="Admin">
-          <a class="btn btn-ghost" href="/admin">Dashboard</a>
-          <a class="btn btn-ghost" href="/" target="_blank" rel="noopener">View invitation</a>
-          <a class="btn btn-ghost" href="/admin/login" id="signOut">Sign out</a>
+          <a class="nav-link" href="/admin">Dashboard</a>
+          <a class="nav-link" href="/admin/settings" aria-current="page">Settings</a>
+          <a class="nav-link" href="/" target="_blank" rel="noopener"
+            ><span class="nav-long">View invitation</span
+            ><span class="nav-short">Invitation</span></a
+          >
+          <span class="nav-sep" aria-hidden="true"></span>
+          <a class="nav-link" href="/admin/login" id="signOut">Sign out</a>
           <button type="button" class="theme-btn" id="themeToggle" aria-pressed="false">
             <span class="sr-only" id="themeToggleLabel">Switch to dark mode</span>
           </button>
