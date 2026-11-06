@@ -34,6 +34,7 @@ body {
   background: var(--bg);
   color: var(--rose);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
@@ -92,16 +93,18 @@ body {
   justify-content: center;
   gap: 0.22em;
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
 }
 
 .names .name {
   font-size: clamp(26px, 7.4dvh, 42px);
-  font-weight: 500;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
   line-height: 1;
 }
 
 .names .amp {
-  font-style: italic;
+  font-style: var(--accent-style);
   font-weight: 300;
   color: var(--gold);
   font-size: clamp(15px, 4dvh, 22px);
@@ -123,7 +126,8 @@ body {
 
 .details .line {
   font-family: var(--font-serif);
-  font-weight: 500;
+  font-size-adjust: var(--serif-adjust);
+  font-weight: var(--heading-weight);
   font-size: clamp(13px, 2.3dvh, 17px);
   line-height: 1.45;
 }
@@ -131,6 +135,7 @@ body {
 .details .line .dim {
   color: var(--ink-soft);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-weight: 400;
   font-size: 0.78em;
 }
@@ -174,7 +179,8 @@ body {
 
 .state-heading {
   font-family: var(--font-serif);
-  font-weight: 500;
+  font-size-adjust: var(--serif-adjust);
+  font-weight: var(--heading-weight);
   font-size: clamp(17px, 2.9dvh, 22px);
   line-height: 1.3;
   color: var(--rose);
@@ -246,6 +252,7 @@ body {
   border-radius: var(--radius);
   background: var(--input-bg);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 16px; /* iOS zooms the page on focus for anything under 16px */
   color: var(--ink);
   outline: none;
@@ -320,8 +327,9 @@ body {
   background: transparent;
   color: var(--rose);
   font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 500;
+  font-size-adjust: var(--serif-adjust);
+  font-style: var(--accent-style);
+  font-weight: var(--accent-weight);
   font-size: clamp(12px, 1.9dvh, 14px);
   line-height: 1.2;
   text-align: center;
@@ -383,6 +391,7 @@ body {
 
 .scope-toggle .toggle-btn {
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-style: normal;
   font-weight: 600;
   font-size: 13px;
@@ -399,7 +408,10 @@ body {
 }
 
 .scope-note[hidden] {
-  display: none;
+  /* Keep the note's space when "The whole day" is picked, so switching
+     between day and evening doesn't resize (and re-centre) the card. */
+  display: block;
+  visibility: hidden;
 }
 
 .guest-list {
@@ -569,6 +581,7 @@ body {
   color: var(--rose);
   background: transparent;
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -605,6 +618,7 @@ body {
 
 .party-count {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-size: 13px;
   color: var(--ink-soft);
   margin: 0 0 12px;
@@ -634,7 +648,8 @@ body {
 
 .decline-note {
   font-family: var(--font-serif);
-  font-style: italic;
+  font-size-adjust: var(--serif-adjust);
+  font-style: var(--accent-style);
   font-size: 15px;
   color: var(--ink-soft);
   margin-bottom: 14px;
@@ -663,6 +678,7 @@ body {
   background: var(--rose);
   color: var(--submit-ink);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-weight: 700;
   letter-spacing: 0.03em;
   font-size: 14px;
@@ -705,7 +721,8 @@ body {
 
 .confirm-display {
   font-family: var(--font-serif);
-  font-style: italic;
+  font-size-adjust: var(--serif-adjust);
+  font-style: var(--accent-style);
   font-size: clamp(19px, 3.4dvh, 25px);
   color: var(--rose);
   margin: 0 0 8px;
@@ -858,6 +875,7 @@ body {
   border-radius: var(--radius);
   background: var(--input-bg);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 16px;
   color: var(--ink);
 }

@@ -185,6 +185,13 @@ describe('fonts', () => {
     expect(css).toContain("--font-sans: 'Montserrat'");
   });
 
+  it("adds each pairing's type tuning", () => {
+    const css = fontCss('modern');
+    expect(css).toContain('--accent-style: normal');
+    expect(css).toContain('--display-weight: 300');
+    expect(css).toContain('--display-tracking: 0.02em');
+  });
+
   it('ignores unknown or hostile ids', () => {
     expect(fontCss('nope')).toBe('');
     expect(fontCss("'; } body { display: none")).toBe('');
@@ -198,7 +205,7 @@ describe('fonts', () => {
     // Changing the font keeps the colours.
     expect(await res.json()).toMatchObject({ value: { brand: '#1F2D3A', font: 'modern' } });
     await markReady();
-    expect(await (await fetchWorker('/')).text()).toContain("--font-sans: 'Inter'");
+    expect(await (await fetchWorker('/')).text()).toContain("--font-sans: 'Jost'");
     const preview = await admin('/admin/theme.css?font=timeless');
     expect(await preview.text()).toContain("'Playfair Display'");
   });

@@ -30,8 +30,23 @@ export function fontCss(id: string | null | undefined): string {
   if (!pair) return '';
   const families = fonts.families as FontFamilies;
   const stack = (name: string) => `'${name}', ${families[name]!.fallback}`;
-  return `:root { --font-serif: ${stack(pair.heading)}; --font-sans: ${stack(pair.body)}; }`;
+  const vars = [`--font-serif: ${stack(pair.heading)}`, `--font-sans: ${stack(pair.body)}`];
+  const tune = ('tune' in pair ? pair.tune : {}) as Record<string, unknown>;
+  for (const [key, value] of Object.entries(tune)) {
+    const rule = TUNE[key];
+    if (rule && rule.test(String(value))) vars.push(`--${key.replace(/_/g, '-')}: ${value}`);
+  }
+  return `:root { ${vars.join('; ')}; }`;
 }
+
+/** Per-pairing type tuning (src/fonts.json "tune"), each value checked. */
+const TUNE: Record<string, RegExp> = {
+  display_weight: /^[1-9]00$/,
+  heading_weight: /^[1-9]00$/,
+  accent_weight: /^[1-9]00$/,
+  accent_style: /^(italic|normal)$/,
+  display_tracking: /^-?0(\.\d+)?em$/,
+};
 
 /** RSVPer's own palette ("the template"), from public/css/tokens.css. */
 const TEMPLATE = {
