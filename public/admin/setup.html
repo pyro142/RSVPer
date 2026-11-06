@@ -42,7 +42,11 @@
         <div class="wizard-panel" id="wizardPanel"></div>
       </div>
 
-      <aside class="wizard-preview live-preview" aria-label="Live preview of your invitation">
+      <aside
+        class="wizard-preview live-preview"
+        id="livePreview"
+        aria-label="Live preview of your invitation"
+      >
         <div class="preview-head">
           <span class="preview-title">Live preview</span>
           <div class="preview-toggle" role="group" aria-label="Preview as">
@@ -51,6 +55,16 @@
               Evening guest
             </button>
           </div>
+          <button type="button" class="preview-close" data-preview-close aria-label="Close preview">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
         </div>
         <div class="phone-frame">
           <iframe
@@ -64,6 +78,15 @@
           Updates as you type. Try it out: nothing you do here is saved or sent.
         </p>
       </aside>
+      <button
+        type="button"
+        class="btn btn-primary preview-fab"
+        id="previewToggle"
+        aria-expanded="false"
+        aria-controls="livePreview"
+      >
+        Preview
+      </button>
     </main>
 
     <script src="/js/admin/common.js"></script>

@@ -86,16 +86,61 @@
       }
     }
 
-    // Narrower screens: the preview is a side panel opened with a button.
+    // Narrower screens: the preview is a panel (a side panel on tablets, a
+    // sheet from the bottom on phones) opened with the Preview button. The
+    // form behind it keeps everything typed, so you can flip back and forth.
     var toggle = document.getElementById('previewToggle');
     var aside = document.querySelector('.live-preview');
     if (toggle && aside) {
-      toggle.addEventListener('click', function () {
-        var open = !aside.classList.contains('open');
+      var backdrop = document.createElement('div');
+      backdrop.className = 'preview-backdrop';
+      backdrop.hidden = true;
+      document.body.appendChild(backdrop);
+
+      // Panel mode = the Preview button is showing (CSS decides by width).
+      var panelMode = function () {
+        return getComputedStyle(toggle).display !== 'none';
+      };
+      var isOpen = function () {
+        return aside.classList.contains('open');
+      };
+      var setOpen = function (open, focus) {
         aside.classList.toggle('open', open);
+        document.documentElement.classList.toggle('preview-open', open);
+        backdrop.hidden = !open;
         toggle.setAttribute('aria-expanded', String(open));
         toggle.textContent = open ? 'Hide preview' : 'Preview';
+        // A closed panel is off-screen: keep keyboards and screen readers out.
+        aside.inert = panelMode() && !open;
+        if (open && focus !== false) {
+          var close = aside.querySelector('[data-preview-close]');
+          if (close) close.focus();
+        } else if (!open && focus !== false) {
+          toggle.focus();
+        }
+      };
+
+      toggle.addEventListener('click', function () {
+        setOpen(!isOpen());
       });
+      backdrop.addEventListener('click', function () {
+        setOpen(false);
+      });
+      [].forEach.call(aside.querySelectorAll('[data-preview-close]'), function (button) {
+        button.addEventListener('click', function () {
+          setOpen(false);
+        });
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && isOpen()) setOpen(false);
+      });
+      // Crossing into the wide layout (preview always visible) closes the panel.
+      var sync = function () {
+        if (!panelMode() && isOpen()) setOpen(false, false);
+        aside.inert = panelMode() && !isOpen();
+      };
+      window.addEventListener('resize', sync);
+      sync();
     }
 
     return {
