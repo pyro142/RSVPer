@@ -31,6 +31,22 @@
   --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-sans: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
+  /* Type tuning. Each font pairing (src/fonts.json → src/theme.ts) can
+     override these, so every pairing is set the way it looks best rather
+     than inheriting values chosen for Fraunces and Karla.
+     - *-adjust: font-size-adjust (x-height ratio). Every font is scaled so
+       its lowercase letters are as tall as Fraunces'/Karla's, so a pairing
+       never looks tiny or shouty at the same font-size.
+     - accent-style: italic or normal for the answer buttons, the "&" and
+       the closing lines; a sans italic usually looks cheap. */
+  --serif-adjust: 0.47;
+  --sans-adjust: 0.48;
+  --display-weight: 500;
+  --display-tracking: 0;
+  --heading-weight: 500;
+  --accent-style: italic;
+  --accent-weight: 500;
+
   /* --- brand ------------------------------------------------------------ */
   --rose: #e66c78;
   --rose-deep: #c6505f;

@@ -30,6 +30,7 @@ const HEADING = [
   [600, 'normal'],
   [300, 'italic'],
   [400, 'italic'],
+  [500, 'italic'],
 ];
 const BODY = [
   [400, 'normal'],

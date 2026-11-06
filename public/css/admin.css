@@ -27,6 +27,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
@@ -81,6 +82,7 @@ body {
 
 .brand-names {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-size: 20px;
   font-weight: 500;
   color: var(--rose);
@@ -135,6 +137,7 @@ body {
 
 .stat-value {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-size: 27px;
   font-weight: 500;
   line-height: 1.1;
@@ -259,6 +262,7 @@ body {
   border-radius: var(--radius);
   background: var(--input-bg);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 14px;
   color: var(--ink);
 }
@@ -290,6 +294,7 @@ body {
   border-radius: var(--radius);
   border: 1px solid transparent;
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
@@ -535,6 +540,7 @@ body {
   background: var(--input-bg);
   color: var(--ink-soft);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -587,6 +593,7 @@ body {
 
 .dialog-title {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-size: 21px;
   font-weight: 500;
   color: var(--rose);
@@ -665,6 +672,7 @@ body {
   border-radius: var(--radius);
   background: var(--input-bg);
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 14px;
   color: var(--ink);
 }
@@ -789,6 +797,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 8px;
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 13.5px;
   color: var(--ink);
   background: var(--input-bg);
@@ -1020,6 +1029,7 @@ body {
 
 .field textarea {
   font-family: var(--font-sans);
+  font-size-adjust: var(--sans-adjust);
   font-size: 14px;
 }
 #bulkInput {
@@ -1029,6 +1039,7 @@ body {
 
 .section-title {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-weight: 500;
   font-size: 22px;
   margin: 0 0 6px;
@@ -1182,6 +1193,7 @@ body {
 }
 .wizard-title {
   font-family: var(--font-serif);
+  font-size-adjust: var(--serif-adjust);
   font-weight: 500;
   font-size: 28px;
   margin: 0 0 8px;
