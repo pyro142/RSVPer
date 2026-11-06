@@ -1809,7 +1809,7 @@ body {
 }
 
 @media (min-width: 760px) and (max-width: 1379px) {
-  .preview-fab {
+  .settings-layout .preview-fab {
     display: inline-flex;
     position: fixed;
     right: 20px;
@@ -1962,5 +1962,188 @@ body {
   .topbar-compact .topbar-actions {
     width: auto;
     margin-left: 0;
+  }
+}
+
+/* ==========================================================================
+   Live preview on smaller screens
+   - Setup on tablets: the same side panel as Settings.
+   - Phones (both pages): a sheet that slides up from the bottom, opened by
+     a Preview button that's always within thumb reach. The form behind it
+     keeps everything typed.
+   ========================================================================== */
+
+.preview-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.preview-close:hover {
+  color: var(--ink);
+  background: var(--rose-tint);
+}
+.preview-close:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: var(--backdrop);
+}
+.preview-backdrop[hidden] {
+  display: none;
+}
+
+@media (min-width: 760px) and (max-width: 1099px) {
+  .wizard-layout .preview-fab {
+    display: inline-flex;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 30;
+    box-shadow: var(--card-shadow);
+  }
+
+  .wizard-layout .wizard-preview {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 432px;
+    padding: 16px 20px;
+    background: var(--bg);
+    border-left: 1px solid var(--line);
+    box-shadow: var(--dialog-shadow);
+    overflow-y: auto;
+    transform: translateX(105%);
+    transition: transform 0.25s ease;
+  }
+
+  .wizard-layout .wizard-preview.open {
+    transform: none;
+  }
+}
+
+@media (min-width: 760px) and (max-width: 1379px) {
+  .settings-layout .live-preview {
+    z-index: 40;
+  }
+  .settings-layout .preview-close {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 760px) and (max-width: 1099px) {
+  .wizard-layout .preview-close {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 759px) {
+  /* Room so the Preview button never hides the last field or Save. */
+  .settings-layout,
+  .wizard-layout {
+    padding-bottom: 96px;
+  }
+
+  .settings-layout .preview-fab,
+  .wizard-layout .preview-fab {
+    display: inline-flex;
+    position: fixed;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 30;
+    transform: translateX(-50%);
+    padding-inline: var(--space-6);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--card-shadow);
+  }
+
+  .settings-layout .live-preview,
+  .wizard-layout .wizard-preview {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    height: 92dvh;
+    padding: var(--space-2) var(--space-3) 0;
+    background: var(--bg);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--dialog-shadow);
+    transform: translateY(105%);
+    transition: transform 0.28s ease;
+  }
+
+  /* A grab bar, so it reads as a sheet. */
+  .settings-layout .live-preview::before,
+  .wizard-layout .wizard-preview::before {
+    content: '';
+    align-self: center;
+    width: 40px;
+    height: 4px;
+    margin: 2px 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--line);
+  }
+
+  .settings-layout .live-preview.open,
+  .wizard-layout .wizard-preview.open {
+    transform: none;
+  }
+
+  .live-preview .preview-head {
+    gap: var(--space-2);
+  }
+  .live-preview .preview-close {
+    display: inline-flex;
+  }
+
+  /* The phone is already the frame: the card fills the sheet. */
+  .live-preview .phone-frame,
+  .settings-layout .phone-frame {
+    flex: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--bg);
+    box-shadow: none;
+  }
+  .live-preview .phone-frame iframe {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .live-preview > .field-hint {
+    display: none;
+  }
+}
+
+/* While a preview panel is open, the page behind it doesn't scroll. */
+:root.preview-open,
+:root.preview-open body {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-preview {
+    transition: none !important;
   }
 }
