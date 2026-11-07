@@ -8,6 +8,10 @@ invitation, say who's coming, add plus ones, and pick meals if you want them
 to. You manage everything from a private admin page: your names and date, the
 wording, the guest list, and the replies.
 
+**[Try the live demo →](https://demo.rsvper.app)** It's the real app with a made-up
+wedding, running entirely in your browser: no sign-in, and nothing you change leaves your
+device. Try the guest invitation with code `GUEST3`, then open the couple's dashboard.
+
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/pyro142/RSVPer)
 
 ## Background & AI Use
@@ -43,24 +47,36 @@ I originally created this project for my own wedding, AI was used to assist in t
 
 ## Screenshots
 
-All screenshots use made-up data from `npm run db:seed:local`.
+Made-up data from `npm run db:seed:local`. Or skip the pictures and
+[try the demo](https://demo.rsvper.app).
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/screenshots/guest-code.png" alt="The invitation card asking for an invite code"></td>
-    <td width="33%"><img src="docs/screenshots/guest-reply.png" alt="A household replying, with a plus one, meal choices and a song request"></td>
-    <td width="33%"><img src="docs/screenshots/guest-evening.png" alt="The evening version of the card for a reception-only guest"></td>
+    <td width="25%"><img src="docs/screenshots/guest-code.png" alt="The invitation card asking for an invite code"></td>
+    <td width="25%"><img src="docs/screenshots/guest-reply.png" alt="A household replying, with a plus one, a meal choice, a dietary note and a song request"></td>
+    <td width="25%"><img src="docs/screenshots/guest-evening.png" alt="The night-time version of the card for an evening-only household"></td>
+    <td width="25%"><img src="docs/screenshots/admin-preview-phone.png" alt="Settings on a phone, with the live preview open as a sheet over the form"></td>
   </tr>
   <tr>
-    <td>Guests enter their code (or use their personal link)</td>
-    <td>Replying: who's coming, plus ones, meals, song request</td>
-    <td>Evening guests get their own time and look</td>
+    <td>Guests enter their code, or use their personal link</td>
+    <td>Replying: who's coming, plus ones, meals, dietary needs, a song</td>
+    <td>Evening guests get their own time and night-time look</td>
+    <td>Edit on your phone and preview as you go</td>
   </tr>
 </table>
 
+**The couple's dashboard:** replies, head counts, meal totals and every household at a glance.
+
 ![The admin dashboard with reply counts, meal totals and the invite list](docs/screenshots/admin-dashboard.png)
 
-![The setup wizard on the date and time step](docs/screenshots/admin-setup.png)
+**Settings with a live preview:** colour themes, your own colours and font pairings, with
+unsaved changes shown on the real invitation as you make them.
+
+![Settings on the colours and fonts section, with the live preview beside it](docs/screenshots/admin-settings.png)
+
+**First-run setup:** four short steps, previewed as you type.
+
+![The setup wizard on its first step, with the live preview](docs/screenshots/admin-setup.png)
 
 ## Deploy
 
