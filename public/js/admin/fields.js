@@ -529,9 +529,38 @@
     if (opts.extraButton) actions.appendChild(opts.extraButton);
     form.appendChild(actions);
 
+    /** The first required field left empty, if any. */
+    function missingRequired() {
+      for (var i = 0; i < fieldSpecs.length; i++) {
+        var field = fieldSpecs[i];
+        if (!field.required) continue;
+        var value = controls[i].get();
+        if (value === null || value === undefined || String(value).trim() === '') {
+          return { field: field, control: controls[i] };
+        }
+      }
+      return null;
+    }
+
     /** Save this section. Resolves true on success, false on a shown error. */
     function save() {
       error.hidden = true;
+      [].forEach.call(form.querySelectorAll('[aria-invalid]'), function (node) {
+        node.removeAttribute('aria-invalid');
+      });
+      // Required fields are checked here, before anything is sent: the setup
+      // wizard must not move on with, say, no wedding date.
+      var missing = missingRequired();
+      if (missing) {
+        error.textContent = missing.field.label + ': please fill this in.';
+        error.hidden = false;
+        var input = missing.control.node.querySelector('input, select, textarea');
+        if (input) {
+          input.setAttribute('aria-invalid', 'true');
+          input.focus();
+        }
+        return Promise.resolve(false);
+      }
       var payload = Object.assign({}, opts.extra || {});
       controls.forEach(function (c) {
         payload[c.key] = c.get();

@@ -1294,6 +1294,11 @@ body {
   border-color: var(--rose);
   color: var(--submit-ink);
 }
+.wizard-step button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .wizard-step button:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
@@ -2146,4 +2151,10 @@ body {
   .live-preview {
     transition: none !important;
   }
+}
+
+/* A required field left empty (set by fields.js when saving). */
+.field [aria-invalid='true'] {
+  border-color: var(--error-ink);
+  background: var(--error-bg);
 }
