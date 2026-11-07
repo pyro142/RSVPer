@@ -78,12 +78,25 @@
       var b = el('button', null, i + 1 + '. ' + step.title);
       b.type = 'button';
       if (i === current) b.setAttribute('aria-current', 'step');
+      // Only steps already reached: no skipping past one that isn't saved.
+      if (!reachable(i)) {
+        b.disabled = true;
+        b.title = 'Finish the earlier steps first';
+      }
       b.addEventListener('click', function () {
-        go(i);
+        if (reachable(i)) go(i);
       });
       li.appendChild(b);
       stepsList.appendChild(li);
     });
+  }
+
+  /** A step can be opened once every step before it is done. */
+  function reachable(i) {
+    for (var j = 0; j < i; j++) {
+      if (!done[STEPS[j].id]) return false;
+    }
+    return true;
   }
 
   function go(i) {
