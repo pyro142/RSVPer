@@ -8,9 +8,7 @@ invitation, say who's coming, add plus ones, and pick meals if you want them
 to. You manage everything from a private admin page: your names and date, the
 wording, the guest list, and the replies.
 
-**[Try the live demo →](https://demo.rsvper.app)** It's the real app with a made-up
-wedding, running entirely in your browser: no sign-in, and nothing you change leaves your
-device. Try the guest invitation with code `GUEST3`, then open the couple's dashboard.
+**[Try the live demo →](https://demo.rsvper.app)**
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/pyro142/RSVPer)
 
