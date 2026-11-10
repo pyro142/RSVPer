@@ -294,6 +294,9 @@ async function getSettings(c: AdminContext): Promise<Response> {
       font_pairs: FONT_PAIRS,
       turnstile_configured: turnstileEnabled(c.env),
       setup_complete: Boolean((await c.repo.wedding())?.setup_completed_at),
+      // Until the couple saves their names, the wizard shows empty fields
+      // rather than the sample "Alex & Sam".
+      names_saved: await c.repo.hasStoredSection('couple'),
     },
   });
 }

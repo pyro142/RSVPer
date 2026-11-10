@@ -2,7 +2,15 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import coloursJs from '../public/js/admin/colours.js?raw';
-import { contrast, fontCss, isDark, oklabDistance, onAccent, themeCss } from '../src/theme';
+import {
+  MIN_TEXT_CONTRAST,
+  contrast,
+  fontCss,
+  isDark,
+  oklabDistance,
+  onAccent,
+  themeCss,
+} from '../src/theme';
 import fonts from '../src/fonts.json';
 import { BASE, fetchWorker, markReady } from './helpers';
 
@@ -80,9 +88,33 @@ describe('theme CSS', () => {
 
   it('a brand alone keeps the default surface and text', () => {
     const css = themeCss({ background: null, brand: '#177AED' });
-    expect(css).toContain('--rose: #177AED');
+    expect(css).toContain('--rose-display: #177AED');
     expect(css).not.toContain('--bg:');
     expect(css).not.toContain('--ink:');
+  });
+
+  it('makes any brand colour readable as text and carry readable button text', () => {
+    const cases: [string | null, string][] = [
+      [null, '#F7C8D0'],
+      [null, '#E0A526'],
+      ['#FFFFFF', '#FFD400'],
+      ['#0F1B2D', '#1B2A40'],
+      ['#F3EFE6', '#9BB59A'],
+    ];
+    for (const [background, brand] of cases) {
+      const css = themeCss({ background, brand });
+      const first = css.split('\n')[0]!;
+      const rose = first.match(/--rose: (#[0-9A-F]{6})/)![1]!;
+      const ink = first.match(/--submit-ink: (#[0-9A-F]{6})/)![1]!;
+      const surface = background ?? '#FFF8EF';
+      expect(contrast(rose, surface), `${brand} on ${surface}`).toBeGreaterThanOrEqual(
+        MIN_TEXT_CONTRAST,
+      );
+      expect(contrast(rose, ink), `button text on ${rose}`).toBeGreaterThanOrEqual(
+        MIN_TEXT_CONTRAST,
+      );
+      expect(first).toContain(`--rose-display: ${brand}`);
+    }
   });
 
   it('keeps evening guests on a dark surface but with the brand colour', () => {
@@ -162,7 +194,7 @@ describe('storing colours', () => {
     const ok = await admin('/admin/theme.css?brand=%23E0A526');
     expect(ok.headers.get('Content-Type')).toContain('text/css');
     expect(ok.headers.get('Cache-Control')).toBe('no-store');
-    expect(await ok.text()).toContain('--rose: #E0A526');
+    expect(await ok.text()).toContain('--rose-display: #E0A526');
     const bad = await admin('/admin/theme.css?brand=%3C%2Fstyle%3E');
     expect(await bad.text()).toBe('');
   });

@@ -129,7 +129,7 @@
     if (f.message) parts.push(plural(s.messages, 'message'));
     $('extrasSummary').hidden = !parts.length;
     $('extrasSummary').textContent =
-      parts.join(' · ') + (parts.length ? ' — see each household’s View, or Export replies.' : '');
+      parts.join(' · ') + (parts.length ? '. See each household’s View, or Export replies.' : '');
     $('statHeads').textContent =
       evening && s.evening_heads
         ? s.day_heads + ' day · ' + s.evening_heads + ' evening'
@@ -259,7 +259,7 @@
       var tag = el('span', 'pill pill-evening', label);
       if (invite.chose_reception_only) {
         tag.classList.add('pill-evening-chosen');
-        tag.title = 'Invited to the whole day — replied that they can only make the evening';
+        tag.title = 'Invited to the whole day, but can only make the evening';
       }
       statusCell.appendChild(document.createTextNode(' '));
       statusCell.appendChild(tag);
@@ -371,7 +371,7 @@
       var pm = guest.plus_one_name ? mealSummary(guest.plus_one_meals) : '';
       if (pm) {
         var mli = el('li');
-        mli.appendChild(el('span', 'view-note', guest.plus_one_name + ' — ' + pm));
+        mli.appendChild(el('span', 'view-note', guest.plus_one_name + ': ' + pm));
         list.appendChild(mli);
       }
       if (guest.plus_one_dietary_notes) {
@@ -573,7 +573,7 @@
       inviteError.hidden = false;
       inviteError.textContent =
         'This household has already replied, so their guest list is locked. ' +
-        'You can still change the name, cap and notes — or reset their reply from View.';
+        'You can still change the name, cap and notes, or reset their reply from View.';
     } else {
       inviteError.hidden = true;
     }
@@ -635,7 +635,9 @@
       .then(function (result) {
         closeDialogs();
         if (!editing && result.created && result.created[0]) {
-          notify('Added ' + result.created[0].household_name + ' — code ' + result.created[0].code);
+          notify(
+            'Added ' + result.created[0].household_name + ' (code ' + result.created[0].code + ')',
+          );
         } else {
           notify('Saved');
         }
@@ -721,7 +723,7 @@
     bulkSummary.textContent =
       plural(ok, 'household') +
       ' ready to import' +
-      (bad ? ', ' + plural(bad, 'problem') + ' — fix those rows and preview again.' : '.');
+      (bad ? ', ' + plural(bad, 'problem') + '. Fix those rows and preview again.' : '.');
     bulkPreview.hidden = false;
     bulkCommit.disabled = ok === 0 || bad > 0;
   }

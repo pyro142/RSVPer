@@ -48,8 +48,12 @@
   --accent-weight: 500;
 
   /* --- brand ------------------------------------------------------------ */
-  --rose: #e66c78;
-  --rose-deep: #c6505f;
+  /* --rose is for text, outlines and buttons, so it is dark enough to read
+     (4.5:1 on the card, and white text on it). --rose-display is the lighter
+     brand rose, only for large display type such as the couple's names. */
+  --rose: #b8434f;
+  --rose-display: #e66c78;
+  --rose-deep: #9c3644;
   --gold: #d9a441;
   --sage: #7e9668;
   --sage-soft: #eef2e8;
@@ -65,7 +69,7 @@
 
   /* --- text ------------------------------------------------------------- */
   --ink: #4a4038;
-  --ink-soft: #8a7e71;
+  --ink-soft: #6e655d;
   --submit-ink: #ffffff; /* text sitting on a rose fill */
 
   /* --- lines ------------------------------------------------------------ */
@@ -77,17 +81,17 @@
   --rose-tint-2: #fbe6e8; /* the same, one step stronger */
   --error-bg: #fdf0f1;
   --error-line: #f5d9dc;
-  --error-ink: #c6505f;
-  --danger: #c6505f;
-  --danger-hover: #a63f4c;
+  --error-ink: #a63f4c;
+  --danger: #a63f4c;
+  --danger-hover: #8f3542;
 
   /* --- status pills ----------------------------------------------------- */
   --pill-ok-bg: #eef2e8;
-  --pill-ok-ink: #7e9668;
+  --pill-ok-ink: #5a6e45;
   --pill-no-bg: #fdf0f1;
-  --pill-no-ink: #c6505f;
+  --pill-no-ink: #a63f4c;
   --pill-wait-bg: #fbf1dc;
-  --pill-wait-ink: #9a7220;
+  --pill-wait-ink: #7f5d16;
   --pill-eve-bg: #efe6f4;
   --pill-eve-ink: #6b4c7a;
   --pill-choice-bg: #e4edf4;
@@ -145,6 +149,7 @@
 :root[data-theme='dark'] {
   /* Rose and gold both lift, or they disappear into the plum. */
   --rose: #f0808c;
+  --rose-display: #f0808c;
   --rose-deep: #d9636f;
   --gold: #e5b65c;
   --sage: #a8c08f;

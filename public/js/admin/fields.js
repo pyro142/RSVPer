@@ -37,8 +37,22 @@
       title: 'Your names',
       help: 'Shown at the top of the invitation.',
       fields: [
-        { key: 'name_one', label: 'First name', type: 'text', max: 40, required: true },
-        { key: 'name_two', label: 'Second name', type: 'text', max: 40, required: true },
+        {
+          key: 'name_one',
+          label: 'First name',
+          type: 'text',
+          max: 40,
+          required: true,
+          placeholder: 'e.g. Priya',
+        },
+        {
+          key: 'name_two',
+          label: 'Second name',
+          type: 'text',
+          max: 40,
+          required: true,
+          placeholder: 'e.g. Tom',
+        },
         { key: 'joiner', label: 'Between the names', type: 'text', max: 8, hint: 'Usually “&”.' },
       ],
     },
@@ -345,6 +359,7 @@
       if (field.type === 'number' && field.max) input.max = field.max;
       input.value = value === null || value === undefined ? '' : String(value);
       if (field.type === 'url') input.placeholder = field.placeholder || 'https://';
+      else if (field.placeholder) input.placeholder = field.placeholder;
       get = function () {
         if (field.type === 'number') return Number(input.value);
         if (field.type === 'date' || field.type === 'time' || field.type === 'url') {

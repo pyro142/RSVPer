@@ -97,6 +97,7 @@ body {
 }
 
 .names .name {
+  color: var(--rose-display, var(--rose));
   font-size: clamp(26px, 7.4dvh, 42px);
   font-weight: var(--display-weight);
   letter-spacing: var(--display-tracking);
@@ -878,6 +879,11 @@ body {
   font-size-adjust: var(--sans-adjust);
   font-size: 16px;
   color: var(--ink);
+}
+
+.meal-field select[aria-invalid='true'] {
+  border-color: var(--error-ink);
+  box-shadow: 0 0 0 1px var(--error-ink);
 }
 
 .meal-field select:focus {

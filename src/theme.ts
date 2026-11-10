@@ -130,12 +130,40 @@ function mix(a: string, b: string, weightA: number): string {
   );
 }
 
+/** Minimum contrast for text and buttons (WCAG AA for normal-size text). */
+export const MIN_TEXT_CONTRAST = 4.5;
+
+/** The card a surface colour produces (mirrors --card-bg in surfaceVars). */
+function cardFor(surface: string, dark: boolean): string {
+  return mix(surface, '#FFFFFF', dark ? 0.92 : 0.55);
+}
+
+/**
+ * The brand colour, darkened (light surfaces) or lightened (dark ones) just
+ * enough to be readable as text on both the page and the card, and to carry
+ * readable button text. Large display type keeps the colour as chosen.
+ */
+export function readableAccent(brand: string, surface: string, dark: boolean): string {
+  const card = cardFor(surface, dark);
+  const toward = dark ? '#FFFFFF' : '#000000';
+  const ok = (c: string) =>
+    Math.min(contrast(c, surface), contrast(c, card)) >= MIN_TEXT_CONTRAST &&
+    contrast(c, onAccent(c)) >= MIN_TEXT_CONTRAST;
+  for (let step = 0; step <= 20; step++) {
+    const candidate = step === 0 ? brand : mix(brand, toward, 1 - step * 0.05);
+    if (ok(candidate)) return candidate;
+  }
+  return dark ? LIGHT_INK_ON_DARK : TEMPLATE.light.ink;
+}
+
 /** Accent tokens for a brand colour on a given surface. */
 function accentVars(brand: string, surface: string, dark: boolean): string[] {
+  const text = readableAccent(brand, surface, dark);
   return [
-    `--rose: ${brand}`,
-    `--rose-deep: color-mix(in srgb, ${brand} 80%, ${dark ? 'white' : 'black'})`,
-    `--submit-ink: ${onAccent(brand)}`,
+    `--rose: ${text}`,
+    `--rose-display: ${brand}`,
+    `--rose-deep: color-mix(in srgb, ${text} 80%, ${dark ? 'white' : 'black'})`,
+    `--submit-ink: ${onAccent(text)}`,
     `--rose-tint: color-mix(in srgb, ${brand} 12%, ${surface})`,
     `--rose-tint-2: color-mix(in srgb, ${brand} 18%, ${surface})`,
   ];
@@ -156,7 +184,8 @@ function surfaceVars(surface: string): string[] {
     `--sub-row-bg: color-mix(in srgb, ${surface} 94%, ${lift})`,
     `--code-bg: color-mix(in srgb, ${ink} 8%, ${surface})`,
     `--ink: ${ink}`,
-    `--ink-soft: color-mix(in srgb, ${ink} 72%, ${surface})`,
+    // 80% on light surfaces keeps hints at 5:1; dark surfaces read fine at 72%.
+    `--ink-soft: color-mix(in srgb, ${ink} ${dark ? 72 : 80}%, ${surface})`,
     `--line: color-mix(in srgb, ${ink} 12%, transparent)`,
     `--row-checked-line: color-mix(in srgb, ${ink} 22%, transparent)`,
     `--toast-bg: ${ink}`,
@@ -196,15 +225,15 @@ const LIGHT_EXTRAS = [
   '--sage-soft: #EEF2E8',
   '--error-bg: #FDF0F1',
   '--error-line: #F5D9DC',
-  '--error-ink: #C6505F',
-  '--danger: #C6505F',
-  '--danger-hover: #A63F4C',
+  '--error-ink: #A63F4C',
+  '--danger: #A63F4C',
+  '--danger-hover: #8F3542',
   '--pill-ok-bg: #EEF2E8',
-  '--pill-ok-ink: #7E9668',
+  '--pill-ok-ink: #5A6E45',
   '--pill-no-bg: #FDF0F1',
-  '--pill-no-ink: #C6505F',
+  '--pill-no-ink: #A63F4C',
   '--pill-wait-bg: #FBF1DC',
-  '--pill-wait-ink: #9A7220',
+  '--pill-wait-ink: #7F5D16',
   '--pill-eve-bg: #EFE6F4',
   '--pill-eve-ink: #6B4C7A',
   '--pill-choice-bg: #E4EDF4',

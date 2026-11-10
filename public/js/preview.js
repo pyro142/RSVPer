@@ -105,7 +105,7 @@
     document.documentElement.lang = locale();
     setText(
       'title',
-      (c.name_one || '') + ' ' + (c.joiner || '&') + ' ' + (c.name_two || '') + ' — RSVP',
+      (c.name_one || '') + ' ' + (c.joiner || '&') + ' ' + (c.name_two || '') + ': RSVP',
     );
     setText('name-one', c.name_one);
     setText('joiner', c.joiner || '&');

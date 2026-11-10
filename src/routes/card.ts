@@ -122,7 +122,7 @@ export async function renderCard(
         el.setAttribute('lang', s.event.locale);
       },
     })
-    .on('[data-slot="title"]', text(`${names} — RSVP`))
+    .on('[data-slot="title"]', text(`${names}: RSVP`))
     .on('[data-slot="robots"]', removeIf(!s.privacy.hide_from_search))
     .on('[data-slot="name-one"]', text(s.couple.name_one))
     .on('[data-slot="joiner"]', text(s.couple.joiner))
