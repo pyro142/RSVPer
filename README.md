@@ -129,8 +129,8 @@ npx wrangler secret put SESSION_SECRET
 ## First-run setup
 
 The setup wizard is four short steps, with a **live preview** of your invitation
-beside it (on a wide screen) that updates as you type and that you can click through
-as a guest:
+that updates as you type and that you can click through as a guest (beside the form
+on a wide screen, or behind the Preview button on a phone):
 
 1. **Your wedding**: your names, the date and start time, and the venue
 2. **Look**: a colour theme and font pairing with one tap each (optional)
@@ -192,7 +192,7 @@ and wrong codes.
 2. Add the hostname guests use (your `workers.dev` address and/or custom domain)
    and keep the mode as **Managed**.
 3. Copy the **Site Key** and **Secret Key** into **Admin → Settings → Bot
-   protection** (or the wizard's Bot protection step).
+   protection**.
 
 Prefer to keep keys out of the database? Set `TURNSTILE_SITE_KEY` and
 `TURNSTILE_SECRET_KEY` as secrets on the Worker instead; those take precedence.
@@ -276,6 +276,12 @@ Codes never contain 0, O, 1, I or L, so check for those. Too many wrong attempts
 from one connection trigger a cool-off (and a 24-hour lockout after many); the
 guest sees "Too many attempts". You can loosen the limits in **Settings →
 Advanced: security**, or just send them their personal link.
+
+**The admin password is right but it says "Too many sign-in attempts".**
+After 50 wrong passwords in an hour, from anywhere, the admin stops accepting
+sign-ins for the rest of that hour, so nobody can keep guessing. If someone is doing
+that on purpose, it locks you out too. Wait for the hour to pass, or protect the
+admin with [Cloudflare Access](#admin-sign-in-with-cloudflare-access-optional).
 
 **The admin says "Setup problem" or "isn't set up yet".**
 A deploy secret is missing or too short. In the Cloudflare dashboard open your

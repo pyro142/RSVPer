@@ -452,7 +452,7 @@
     input.id = id;
     input.maxLength = 300;
     input.autocomplete = 'off';
-    input.placeholder = 'Allergies or dietary needs (optional)';
+    input.placeholder = 'Dietary needs (optional)';
     field.appendChild(lab);
     field.appendChild(input);
     return { field: field, input: input };
@@ -478,13 +478,21 @@
       placeholder.value = '';
       select.appendChild(placeholder);
       course.options.forEach(function (o) {
-        var option = el('option', null, o.description ? o.name + ' — ' + o.description : o.name);
+        var option = el(
+          'option',
+          null,
+          o.description ? o.name + ' (' + o.description + ')' : o.name,
+        );
         option.value = o.id;
         select.appendChild(option);
       });
       field.appendChild(label);
       field.appendChild(select);
       wrap.appendChild(field);
+      // Once a choice is made, stop flagging it.
+      select.addEventListener('change', function () {
+        if (select.value) select.removeAttribute('aria-invalid');
+      });
       selects.push({ course: course, select: select });
     });
     return {
@@ -501,6 +509,19 @@
           out[selects[i].course.id] = selects[i].select.value;
         }
         return out;
+      },
+      /** Flag every unanswered course; returns the unanswered ones. */
+      markMissing: function () {
+        var missing = [];
+        selects.forEach(function (s) {
+          if (s.select.value) {
+            s.select.removeAttribute('aria-invalid');
+          } else {
+            s.select.setAttribute('aria-invalid', 'true');
+            missing.push({ select: s.select, course: s.course.name, who: who });
+          }
+        });
+        return missing;
       },
     };
   }
@@ -592,7 +613,7 @@
         entry.plusOneDietaryInput = pdiet.input;
       }
 
-      entry.plusOneMeals = mealFields('plus-one-' + index, 'their plus one');
+      entry.plusOneMeals = mealFields('plus-one-' + index, guest.name + '’s plus one');
       if (entry.plusOneMeals) nameField.appendChild(entry.plusOneMeals.node);
 
       block.appendChild(nameField);
@@ -780,14 +801,31 @@
         return;
       }
 
-      var missingMeal = guestRows.some(function (entry) {
-        if (!entry.checkbox.checked) return false;
-        if (entry.meals && !entry.meals.get()) return true;
+      // Flag every unanswered meal, name the first, and take the guest to it.
+      var missingMeals = [];
+      guestRows.forEach(function (entry) {
+        if (!entry.checkbox.checked) return;
+        if (entry.meals) missingMeals = missingMeals.concat(entry.meals.markMissing());
         var bringing = entry.plusOneWanted && entry.plusOneWanted.checked;
-        return !!(bringing && entry.plusOneMeals && !entry.plusOneMeals.get());
+        if (bringing && entry.plusOneMeals) {
+          missingMeals = missingMeals.concat(entry.plusOneMeals.markMissing());
+        }
       });
-      if (missingMeal) {
-        show(submitError, 'Please choose a meal for everyone who is coming.');
+      if (missingMeals.length) {
+        var first = missingMeals[0];
+        var more = missingMeals.length - 1;
+        show(
+          submitError,
+          'Please choose a ' +
+            first.course.toLowerCase() +
+            (first.who ? ' for ' + first.who : '') +
+            (more ? ' (and ' + more + ' more, marked in red).' : '.'),
+        );
+        first.select.focus();
+        first.select.scrollIntoView({
+          block: 'center',
+          behavior: reducedMotion ? 'auto' : 'smooth',
+        });
         return;
       }
 

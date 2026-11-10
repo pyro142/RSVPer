@@ -196,13 +196,13 @@ body {
 }
 
 .stat-accepted .stat-value {
-  color: var(--sage);
+  color: var(--pill-ok-ink);
 }
 .stat-declined .stat-value {
   color: var(--rose-deep);
 }
 .stat-outstanding .stat-value {
-  color: var(--gold);
+  color: var(--pill-wait-ink);
 }
 
 /* Day / evening breakdown widget, pinned to the right edge of the card. Full
@@ -256,7 +256,7 @@ body {
 
 /* Sun for the wedding breakfast, moon for the evening reception. */
 .split-day {
-  color: var(--gold);
+  color: var(--pill-wait-ink);
 }
 .split-eve {
   color: var(--pill-eve-ink);

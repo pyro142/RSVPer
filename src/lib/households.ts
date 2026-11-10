@@ -19,7 +19,7 @@ export function seatsError(max: number, named: number, plusOnes: number): string
   const plusPart = `${plusOnes} plus one${plusOnes === 1 ? '' : 's'}`;
   return (
     `Max party size (${max}) is smaller than the ${namedPart} and ${plusPart} ` +
-    `(${named + plusOnes} seats needed) — raise the cap or remove a plus one`
+    `(${named + plusOnes} seats needed). Raise the cap or remove a plus one.`
   );
 }
 

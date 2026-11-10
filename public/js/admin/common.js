@@ -305,7 +305,7 @@
           // down a list of sixty.
           button.replaceChild(tickIcon(), button.firstChild);
           button.classList.add('copied');
-          notify('Link copied — ' + invite.household_name);
+          notify('Link copied for ' + invite.household_name);
 
           setTimeout(function () {
             if (!button.isConnected) return;

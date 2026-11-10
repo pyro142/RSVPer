@@ -346,7 +346,7 @@
       var link = el('a', null, item[1]);
       link.href = '/admin/settings#' + item[0];
       li.appendChild(link);
-      if (item[2]) li.appendChild(el('span', 'field-hint', ' — ' + item[2]));
+      if (item[2]) li.appendChild(el('span', 'field-hint', ': ' + item[2]));
       list.appendChild(li);
     });
     container.appendChild(list);
@@ -385,6 +385,9 @@
     R.api('/settings').then(function (data) {
       settings = data.settings;
       meta = data.meta;
+      if (meta.names_saved === false) {
+        settings.couple = Object.assign({}, settings.couple, { name_one: '', name_two: '' });
+      }
       refreshEveningToggle();
       go(0);
     });

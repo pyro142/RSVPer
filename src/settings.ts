@@ -137,7 +137,7 @@ export const DEFAULTS: Settings = {
     accepted_message: "We can't wait to celebrate with you.",
     declined_title: 'Thank you for letting us know.',
     declined_message: "We'll miss you dearly.",
-    already_title: "You've already replied — thank you!",
+    already_title: "You've already replied. Thank you!",
     already_message: "Please contact us if anything's changed.",
     closed_message: 'RSVPs have now closed. Please contact us directly.',
   },
